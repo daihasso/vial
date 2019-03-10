@@ -15,8 +15,8 @@ import (
     "github.com/daihasso/slogging"
     gm "github.com/onsi/gomega"
 
-    "daihasso.net/library/vial/responses"
-    "daihasso.net/library/vial/neterr"
+    "github.com/daihasso/vial/responses"
+    "github.com/daihasso/vial/neterr"
 )
 
 var testCertString = `-----BEGIN CERTIFICATE-----
@@ -194,6 +194,7 @@ func TestServerSimpleRoute(t *testing.T) {
     err = server.AddController(
         "/hello/<name>",
         FuncHandler(
+            "get",
             func(transactor *Transactor) responses.Data {
                 name, ok := transactor.Request.PathString("name")
                 if !ok {
@@ -212,7 +213,6 @@ func TestServerSimpleRoute(t *testing.T) {
                     }),
                 )
             },
-            "get",
         ),
     )
     g.Expect(err).To(gm.BeNil())
@@ -240,10 +240,10 @@ func TestServerDefaultOptions(t *testing.T) {
     err = server.AddController(
         "/hello/<name>",
         FuncHandler(
+            "get",
             func(transactor *Transactor) responses.Data {
                 return transactor.Respond(200)
             },
-            "get",
         ),
     )
     g.Expect(err).To(gm.BeNil())
@@ -251,12 +251,12 @@ func TestServerDefaultOptions(t *testing.T) {
     err = server.AddController(
         "/hello/<name>",
         FuncHandler(
+            "post",
             func(transactor *Transactor) responses.Data {
                 return transactor.Respond(
                     200,
                 )
             },
-            "post",
         ),
     )
     g.Expect(err).To(gm.BeNil())
@@ -359,8 +359,8 @@ func TestServerInvalidRoute(t *testing.T) {
     err = server.AddController(
         "/test/route",
         FuncHandler(
-            func(foo string, bar int) {},
             "get",
+            func(foo string, bar int) {},
         ),
     )
     g.Expect(err).To(gm.HaveOccurred())

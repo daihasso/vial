@@ -8,7 +8,7 @@ import (
     "github.com/daihasso/tote"
     "github.com/daihasso/peechee"
 
-    "daihasso.net/library/vial/responses"
+    "github.com/daihasso/vial/responses"
 )
 
 type serverModifier func(*Server) error

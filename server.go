@@ -18,8 +18,8 @@ import (
     "github.com/daihasso/peechee"
     "github.com/google/uuid"
 
-    "daihasso.net/library/vial/responses"
-    "daihasso.net/library/vial/neterr"
+    "github.com/daihasso/vial/responses"
+    "github.com/daihasso/vial/neterr"
 )
 
 // Server is a specialized server for microservices.
@@ -118,7 +118,7 @@ func (s *Server) AddController(
     if err != nil {
         return errors.Wrap(err, "Error while parsing route provided")
     }
-    allRouteControllers := append([]RouteController{rc}, otherRCs)
+    allRouteControllers := append([]RouteController{rc}, otherRCs...)
     methodCallers := MethodsForRouteController(path, allRouteControllers...)
     routeControllerHelper := RouteControllerHelper{
         route: route,

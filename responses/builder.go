@@ -11,7 +11,7 @@ import (
 
     "github.com/pkg/errors"
 
-    "daihasso.net/library/vial/neterr"
+    "github.com/daihasso/vial/neterr"
 )
 
 // Builder is a helper struct for constructing a Data struct for a transaction

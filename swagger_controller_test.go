@@ -8,7 +8,7 @@ import (
     "net/http/httptest"
 
     gm "github.com/onsi/gomega"
-    "daihasso.net/library/vial/responses"
+    "github.com/daihasso/vial/responses"
 )
 
 var testSwaggerString = `

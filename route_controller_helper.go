@@ -8,7 +8,7 @@ import (
     "github.com/pkg/errors"
     logging "github.com/daihasso/slogging"
 
-    "daihasso.net/library/vial/responses"
+    "github.com/daihasso/vial/responses"
 )
 
 // RouteControllerCaller provides a uniform function for calling any of the
@@ -100,13 +100,27 @@ func wrapControllerMethod(in interface{}) (RouteControllerCaller, error) {
     )
 }
 
-// FuncHandler wraps a functional method handler with the methods it responds
-// to.
-func FuncHandler(
+// FuncHandlerMulti wraps a functional method handler with a series of methods
+// it responds to.
+func FuncHandlerMulti(
     rcf RouteControllerFunc, method string, otherMethods ...string,
 ) methodControllerFunc {
-    var reqMethods []RequestMethod
     methods := append([]string{method}, otherMethods...)
+    return generateMethodControllerFunc(rcf, methods...)
+}
+
+// FuncHandler wraps a functional method handler with the method it responds
+// to.
+func FuncHandler(
+    method string, rcf RouteControllerFunc,
+) methodControllerFunc {
+    return generateMethodControllerFunc(rcf, method)
+}
+
+func generateMethodControllerFunc(
+    rcf RouteControllerFunc, methods ...string,
+) methodControllerFunc {
+    var reqMethods []RequestMethod
     for _, methodString := range methods {
         reqMethods = append(reqMethods, RequestMethodFromString(methodString))
     }
@@ -136,6 +150,7 @@ func MethodsForRouteController(
     path string,
     routeControllers ...RouteController,
 ) map[RequestMethod]RouteControllerCaller {
+    fmt.Println(routeControllers)
     methods := make(map[RequestMethod]RouteControllerCaller)
 
     for i, rc := range routeControllers {

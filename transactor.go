@@ -13,8 +13,8 @@ import (
     "github.com/pkg/errors"
     "github.com/google/uuid"
 
-    "daihasso.net/library/vial/responses"
-    "daihasso.net/library/vial/neterr"
+    "github.com/daihasso/vial/responses"
+    "github.com/daihasso/vial/neterr"
 )
 
 // Transactor is a helper for handling request and response logic.

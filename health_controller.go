@@ -3,7 +3,7 @@ package vial
 import (
     "github.com/daihasso/slogging"
 
-    "daihasso.net/library/vial/responses"
+    "github.com/daihasso/vial/responses"
 )
 
 // defaultHealthController returns a dummy value of true.

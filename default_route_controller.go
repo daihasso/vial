@@ -5,8 +5,8 @@ import (
     "strings"
     "net/http"
 
-    "daihasso.net/library/vial/responses"
-    "daihasso.net/library/vial/neterr"
+    "github.com/daihasso/vial/responses"
+    "github.com/daihasso/vial/neterr"
 )
 
 // DefaultOptions iterates a routes available methods and returns them in the

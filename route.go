@@ -3,6 +3,7 @@ package vial
 import (
     "fmt"
     "regexp"
+    "strings"
 
     "github.com/pkg/errors"
 )
@@ -19,6 +20,8 @@ var baseRegex = regexp.MustCompile(`([^<]+)`)
 // uuidRegex matches a UUID.
 var uuidRegex = `(?P<%s>[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?` +
     `[0-9a-fA-F]{4}-?[0-9a-fA-F]{12})`
+var intRegex = `(?P<%s>[0-9]+)`
+var floatRegex = `(?P<%s>[0-9]*\.[0-9]+)`
 
 // Route is a broken-down version of a route string.
 type Route struct {
@@ -55,15 +58,15 @@ func parseURLMatch(match string) string {
     variableMatches := variableParse.FindStringSubmatch(match)
     var newString string
     if len(variableMatches) == 3 {
-        variableType := variableMatches[1]
+        variableType := strings.ToLower(variableMatches[1])
         switch variableType {
-        case "integer":
-            newString = `(?P<%s>[0-9]+)`
+        case "float":
+            newString = floatRegex
+        case "integer", "int":
+            newString = intRegex
         case "uuid":
             newString = uuidRegex
-        case "":
-            fallthrough
-        case "string":
+        case "string", "":
             newString = `(?P<%s>[^\/\\]+)`
         default:
             panic(errors.Errorf("Unknown variable type: %s", variableType))

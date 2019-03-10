@@ -6,7 +6,7 @@ import(
     "reflect"
     "strings"
 
-    "daihasso.net/library/vial/responses"
+    "github.com/daihasso/vial/responses"
 )
 
 // A RouteControllerMethod is a function which takes a context and a transactor

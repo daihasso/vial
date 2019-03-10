@@ -36,6 +36,21 @@ func (r Request) PathString(key string) (string, bool) {
 
 // PathInt returns a path variable as a int or an error if it could not be
 // found or could not be converted.
+func (r *Request) PathFloat(key string) (float64, bool) {
+    if value, ok := r.PathParams[key]; ok {
+        floatVal, err := strconv.ParseFloat(value, 64)
+        if err != nil {
+            return 0, false
+        }
+
+        return floatVal, true
+    }
+
+    return 0, false
+}
+
+// PathInt returns a path variable as a int or an error if it could not be
+// found or could not be converted.
 func (r *Request) PathInt(key string) (int, bool) {
     if value, ok := r.PathParams[key]; ok {
         intValue, err := strconv.Atoi(value)

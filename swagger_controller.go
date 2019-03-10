@@ -9,8 +9,8 @@ import (
 
     "gopkg.in/yaml.v2"
 
-    "daihasso.net/library/vial/responses"
-    "daihasso.net/library/vial/neterr"
+    "github.com/daihasso/vial/responses"
+    "github.com/daihasso/vial/neterr"
 )
 
 type SwaggerFormat int

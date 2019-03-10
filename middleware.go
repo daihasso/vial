@@ -6,7 +6,7 @@ import (
 
     "github.com/pkg/errors"
 
-    "daihasso.net/library/vial/responses"
+    "github.com/daihasso/vial/responses"
 )
 
 // PreMiddleWare is a function that's run against a request before the route's

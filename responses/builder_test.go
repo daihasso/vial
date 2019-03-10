@@ -11,7 +11,7 @@ import (
 
     gm "github.com/onsi/gomega"
 
-    "daihasso.net/library/vial/neterr"
+    "github.com/daihasso/vial/neterr"
 )
 
 func TestBuilderBasic(t *testing.T) {
