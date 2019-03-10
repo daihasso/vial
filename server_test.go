@@ -3,10 +3,11 @@ package vial
 import (
     "context"
     "io/ioutil"
-    "log"
+    "math/rand"
     "net/http"
     "net/http/httptest"
     "os"
+    "strconv"
     "strings"
     "testing"
     "time"
@@ -103,8 +104,16 @@ A4mc4X5UAr2pMeu4wgzUWFF4KIIb3Mpm
 -----END PRIVATE KEY-----
 `
 
-func testLogger(t *testing.T) *log.Logger {
-    return log.New(testWriter{t}, "test", log.LstdFlags)
+func setupLogging(t *testing.T, g *gm.GomegaWithT) *logging.Logger {
+    err := logging.GetRootLogger().SetLogLevel(logging.DEBUG)
+    g.Expect(err).To(gm.BeNil())
+    logging.GetRootLogger().SetWriters(testWriter{t})
+
+    identifier := "test" + strconv.Itoa(rand.Int()) //#nosec G404
+    logger, err := logging.NewLogger(identifier)
+    g.Expect(err).To(gm.BeNil())
+
+    return logger
 }
 
 type testWriter struct {
@@ -119,17 +128,7 @@ func (tw testWriter) Write(p []byte) (n int, err error) {
 func TestServerBasic(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
-    logLevels, err := logging.GetLogLevelsForString("DEBUG")
-    if err != nil {
-        panic(err)
-    }
-
-    logger := logging.GetELFLogger(
-        logging.Stdout,
-        logLevels,
-    )
-    logger.SetInternalLogger(testLogger(t))
-    logging.SetDefaultLogger("tests", logger)
+    logger := setupLogging(t, g)
 
     expectedBody := `{"healthy":true}`
 
@@ -151,17 +150,7 @@ func TestServerBasic(t *testing.T) {
 func TestServerBasicEncrypted(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
-    logLevels, err := logging.GetLogLevelsForString("DEBUG")
-    if err != nil {
-        panic(err)
-    }
-
-    logger := logging.GetELFLogger(
-        logging.Stdout,
-        logLevels,
-    )
-    logger.SetInternalLogger(testLogger(t))
-    logging.SetDefaultLogger("tests", logger)
+    logger := setupLogging(t, g)
 
     expectedBody := `{"healthy":true}`
 
@@ -191,17 +180,7 @@ func TestServerBasicEncrypted(t *testing.T) {
 func TestServerSimpleRoute(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
-    logLevels, err := logging.GetLogLevelsForString("DEBUG")
-    if err != nil {
-        panic(err)
-    }
-
-    logger := logging.GetELFLogger(
-        logging.Stdout,
-        logLevels,
-    )
-    logger.SetInternalLogger(testLogger(t))
-    logging.SetDefaultLogger("tests", logger)
+    logger := setupLogging(t, g)
 
     expectedBody := `{"hello":"tester"}`
 
@@ -209,7 +188,7 @@ func TestServerSimpleRoute(t *testing.T) {
     g.Expect(err).To(gm.BeNil())
 
     rr := httptest.NewRecorder()
-    server, err := NewServer()
+    server, err := NewServer(AddCustomLogger(logger))
     g.Expect(err).To(gm.BeNil())
 
     err = server.AddController(
@@ -249,23 +228,13 @@ func TestServerSimpleRoute(t *testing.T) {
 func TestServerDefaultOptions(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
-    logLevels, err := logging.GetLogLevelsForString("DEBUG")
-    if err != nil {
-        panic(err)
-    }
-
-    logger := logging.GetELFLogger(
-        logging.Stdout,
-        logLevels,
-    )
-    logger.SetInternalLogger(testLogger(t))
-    logging.SetDefaultLogger("tests", logger)
+    logger := setupLogging(t, g)
 
     req, err := http.NewRequest("OPTIONS", "/hello/tester", nil)
     g.Expect(err).To(gm.BeNil())
 
     rr := httptest.NewRecorder()
-    server, err := NewServer()
+    server, err := NewServer(AddCustomLogger(logger))
     g.Expect(err).To(gm.BeNil())
 
     err = server.AddController(
@@ -303,17 +272,7 @@ func TestServerDefaultOptions(t *testing.T) {
 func TestServerBadMethod(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
-    logLevels, err := logging.GetLogLevelsForString("DEBUG")
-    if err != nil {
-        panic(err)
-    }
-
-    logger := logging.GetELFLogger(
-        logging.Stdout,
-        logLevels,
-    )
-    logger.SetInternalLogger(testLogger(t))
-    logging.SetDefaultLogger("tests", logger)
+    logger := setupLogging(t, g)
 
     req, err := http.NewRequest("PUT", "/health", nil)
     g.Expect(err).To(gm.BeNil())
@@ -335,19 +294,9 @@ func TestServerBadMethod(t *testing.T) {
 func TestServerBasicGoStart(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
-    logLevels, err := logging.GetLogLevelsForString("DEBUG")
-    if err != nil {
-        panic(err)
-    }
+    logger := setupLogging(t, g)
 
-    logger := logging.GetELFLogger(
-        logging.Stdout,
-        logLevels,
-    )
-    logger.SetInternalLogger(testLogger(t))
-    logging.SetDefaultLogger("tests", logger)
-
-    server, err := NewServerDefault()
+    server, err := NewServerDefault(AddCustomLogger(logger))
     g.Expect(err).To(gm.BeNil())
 
     ch := server.GoStart()
@@ -371,17 +320,7 @@ func TestServerBasicGoStart(t *testing.T) {
 func TestServerEncryptedGoStart(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
-    logLevels, err := logging.GetLogLevelsForString("DEBUG")
-    if err != nil {
-        panic(err)
-    }
-
-    logger := logging.GetELFLogger(
-        logging.Stdout,
-        logLevels,
-    )
-    logger.SetInternalLogger(testLogger(t))
-    logging.SetDefaultLogger("tests", logger)
+    logger := setupLogging(t, g)
 
     testCertData := strings.NewReader(testCertString)
     testKeyData := strings.NewReader(testKeyString)
@@ -412,20 +351,9 @@ func TestServerEncryptedGoStart(t *testing.T) {
 func TestServerInvalidRoute(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
-    logLevels, err := logging.GetLogLevelsForString("DEBUG")
-    if err != nil {
-        panic(err)
-    }
+    logger := setupLogging(t, g)
 
-    logger := logging.GetELFLogger(
-        logging.Stdout,
-        logLevels,
-    )
-    logger.SetInternalLogger(testLogger(t))
-    logging.SetDefaultLogger("tests", logger)
-
-
-    server, err := NewServer()
+    server, err := NewServer(AddCustomLogger(logger))
     g.Expect(err).To(gm.BeNil())
 
     err = server.AddController(
@@ -441,17 +369,7 @@ func TestServerInvalidRoute(t *testing.T) {
 func TestServerMissingRoute(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
-    logLevels, err := logging.GetLogLevelsForString("DEBUG")
-    if err != nil {
-        panic(err)
-    }
-
-    logger := logging.GetELFLogger(
-        logging.Stdout,
-        logLevels,
-    )
-    logger.SetInternalLogger(testLogger(t))
-    logging.SetDefaultLogger("tests", logger)
+    logger := setupLogging(t, g)
 
     req, err := http.NewRequest("GET", "/foo", nil)
     g.Expect(err).To(gm.BeNil())
@@ -473,17 +391,7 @@ func TestServerMissingRoute(t *testing.T) {
 func TestServerPreActionHijackReturn(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
-    logLevels, err := logging.GetLogLevelsForString("DEBUG")
-    if err != nil {
-        panic(err)
-    }
-
-    logger := logging.GetELFLogger(
-        logging.Stdout,
-        logLevels,
-    )
-    logger.SetInternalLogger(testLogger(t))
-    logging.SetDefaultLogger("tests", logger)
+    logger := setupLogging(t, g)
 
     req, err := http.NewRequest("GET", "/health", nil)
     g.Expect(err).To(gm.BeNil())
@@ -497,8 +405,9 @@ func TestServerPreActionHijackReturn(t *testing.T) {
                 Body: []byte(`HIJACKED!`),
                 StatusCode: http.StatusOK,
             }, nil
-        },
-    ))
+        }),
+        AddCustomLogger(logger),
+    )
     g.Expect(err).To(gm.BeNil())
 
     server.muxer.ServeHTTP(rr, req)
@@ -511,17 +420,7 @@ func TestServerPreActionHijackReturn(t *testing.T) {
 func TestServerPostActionHijackReturn(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
-    logLevels, err := logging.GetLogLevelsForString("DEBUG")
-    if err != nil {
-        panic(err)
-    }
-
-    logger := logging.GetELFLogger(
-        logging.Stdout,
-        logLevels,
-    )
-    logger.SetInternalLogger(testLogger(t))
-    logging.SetDefaultLogger("tests", logger)
+    logger := setupLogging(t, g)
 
     expectedBody := `{"healthy":true}`
 
@@ -540,8 +439,9 @@ func TestServerPostActionHijackReturn(t *testing.T) {
                 Body: existingResp.Body,
                 StatusCode: http.StatusAccepted,
             }, nil
-        },
-    ))
+        }),
+        AddCustomLogger(logger),
+    )
     g.Expect(err).To(gm.BeNil())
 
     server.muxer.ServeHTTP(rr, req)
@@ -554,17 +454,7 @@ func TestServerPostActionHijackReturn(t *testing.T) {
 func TestServerBasicEncryptedFilePaths(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
-    logLevels, err := logging.GetLogLevelsForString("DEBUG")
-    if err != nil {
-        panic(err)
-    }
-
-    logger := logging.GetELFLogger(
-        logging.Stdout,
-        logLevels,
-    )
-    logger.SetInternalLogger(testLogger(t))
-    logging.SetDefaultLogger("tests", logger)
+    logger := setupLogging(t, g)
 
     tempCertFile, err := ioutil.TempFile("", "test-server-encryption.cert")
     g.Expect(err).To(gm.BeNil())
@@ -604,17 +494,7 @@ func TestServerBasicEncryptedFilePaths(t *testing.T) {
 func TestServerBasicEncryptedFilePathsViaConfig(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
-    logLevels, err := logging.GetLogLevelsForString("DEBUG")
-    if err != nil {
-        panic(err)
-    }
-
-    logger := logging.GetELFLogger(
-        logging.Stdout,
-        logLevels,
-    )
-    logger.SetInternalLogger(testLogger(t))
-    logging.SetDefaultLogger("tests", logger)
+    logger := setupLogging(t, g)
 
     tempCertFile, err := ioutil.TempFile("", "test-server-encryption.cert")
     g.Expect(err).To(gm.BeNil())
@@ -659,17 +539,7 @@ func TestServerBasicEncryptedFilePathsViaConfig(t *testing.T) {
 func TestServerCustomConfigFile(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
-    logLevels, err := logging.GetLogLevelsForString("DEBUG")
-    if err != nil {
-        panic(err)
-    }
-
-    logger := logging.GetELFLogger(
-        logging.Stdout,
-        logLevels,
-    )
-    logger.SetInternalLogger(testLogger(t))
-    logging.SetDefaultLogger("tests", logger)
+    logger := setupLogging(t, g)
 
     configYaml := `
 vial:

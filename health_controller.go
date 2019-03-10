@@ -1,6 +1,8 @@
 package vial
 
 import (
+    "github.com/daihasso/slogging"
+
     "daihasso.net/library/vial/responses"
 )
 
@@ -12,10 +14,10 @@ func (*defaultHealthController) Get(
     transactor *Transactor,
 ) responses.Data {
     healthy := true
-    transactor.Logger.Debug("Health check.").
-        With("requestor", transactor.Request.RemoteAddr).
-        With("healthy", healthy).
-        Send()
+    transactor.Logger.Debug("Health check.", logging.Extras{
+        "requestor": transactor.Request.RemoteAddr,
+        "healthy": healthy,
+    })
 
     return transactor.Respond(
         200,

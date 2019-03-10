@@ -7,7 +7,6 @@ import (
     "net/http"
     "net/http/httptest"
 
-    "github.com/daihasso/slogging"
     gm "github.com/onsi/gomega"
     "daihasso.net/library/vial/responses"
 )
@@ -36,17 +35,7 @@ paths:
 func TestSwaggerGet(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
-    logLevels, err := logging.GetLogLevelsForString("DEBUG")
-    if err != nil {
-        panic(err)
-    }
-
-    logger := logging.GetELFLogger(
-        logging.Stdout,
-        logLevels,
-    )
-    logger.SetInternalLogger(testLogger(t))
-    logging.SetDefaultLogger("tests", logger)
+    logger := setupLogging(t, g)
 
     swaggerFile, err := ioutil.TempFile("", "swagger.yaml")
     g.Expect(err).To(gm.BeNil())
@@ -95,17 +84,7 @@ func TestSwaggerGet(t *testing.T) {
 func TestSwaggerGetJSON(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
-    logLevels, err := logging.GetLogLevelsForString("DEBUG")
-    if err != nil {
-        panic(err)
-    }
-
-    logger := logging.GetELFLogger(
-        logging.Stdout,
-        logLevels,
-    )
-    logger.SetInternalLogger(testLogger(t))
-    logging.SetDefaultLogger("tests", logger)
+    logger := setupLogging(t, g)
 
     swaggerFile, err := ioutil.TempFile("", "swagger.yaml")
     g.Expect(err).To(gm.BeNil())

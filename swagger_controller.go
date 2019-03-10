@@ -51,9 +51,10 @@ func (self defaultSwaggerController) Get(
             http.StatusNotFound, neterr.SwaggerNotFoundError,
         )
     } else if err != nil {
-        transactor.Logger.Error(
+        transactor.Logger.Exception(
+            err,
             "Error while reading swagger file.",
-        ).With("error", err,).Send()
+        )
         return transactor.Abort(
             http.StatusNotFound, neterr.SwaggerNotFoundError,
         )

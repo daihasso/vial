@@ -4,6 +4,7 @@ import (
     "bytes"
     "context"
     "encoding/json"
+    "fmt"
     "io"
     "io/ioutil"
     "net/http"
@@ -20,7 +21,7 @@ import (
 type Transactor struct {
     Builder *responses.Builder
     Config *Config
-    Logger logging.Logger
+    Logger *logging.Logger
     Request *Request
 
     context context.Context
@@ -163,7 +164,7 @@ func NewTransactor(
     responseWriter http.ResponseWriter,
     variables map[string]string,
     config *Config,
-    logger logging.Logger,
+    logger *logging.Logger,
     encodingType responses.EncodingType,
     options ...TransactorOption,
 ) (*Transactor, error) {
@@ -193,15 +194,23 @@ func NewTransactor(
         context: existingContext,
     }
 
-    loggerWithSequenceId := logging.WithExtras(
-        logger, logging.AddExtraAttributeFuncs(
-            map[string]func() (interface{}, error){
+    loggerWithSequenceId, err := logging.CloneLogger(
+        fmt.Sprintf("vial.transactor.logger-%p", newRequest),
+        logger,
+        logging.WithDefaultExtras(logging.FunctionalExtras(
+            logging.ExtrasFuncs{
                 "sequence_id": func() (interface{}, error) {
                     return transactor.SequenceId().String(), nil
                 },
             },
-        ),
+        )),
     )
+    if err != nil {
+        return nil, errors.Wrap(
+            err, "Error while cloning logger with SequenceId",
+        )
+    }
+
     transactor.Logger = loggerWithSequenceId
 
     for _, option := range options {

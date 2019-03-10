@@ -162,7 +162,7 @@ func MethodsForRouteController(
                             i,
                             path,
                             reqMethod.String(),
-                        )).Send()
+                        ))
                     }
                     methods[reqMethod] = rcWrap
                 }

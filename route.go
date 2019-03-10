@@ -57,13 +57,13 @@ func parseURLMatch(match string) string {
     if len(variableMatches) == 3 {
         variableType := variableMatches[1]
         switch variableType {
-        case "string":
-            newString = `(?P<%s>[A-Za-z]+)`
         case "integer":
             newString = `(?P<%s>[0-9]+)`
         case "uuid":
             newString = uuidRegex
         case "":
+            fallthrough
+        case "string":
             newString = `(?P<%s>[^\/\\]+)`
         default:
             panic(errors.Errorf("Unknown variable type: %s", variableType))
@@ -88,6 +88,10 @@ func ParseRoute(route string) (newRoute Route, err error) {
             }
         }
     }()
+
+    if route[0] != '/' {
+        route = "/" + route
+    }
 
     matcher := parameterRegex.ReplaceAllStringFunc(route, parseURLMatch) + "$"
     matcherRegexp, newErr := regexp.Compile(matcher)

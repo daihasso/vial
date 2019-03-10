@@ -3,9 +3,11 @@ package vial
 import (
     "context"
     "fmt"
+    "os"
     "sort"
     "strings"
     "strconv"
+    "log"
     "net/http"
     "crypto/tls"
     "io"
@@ -23,7 +25,7 @@ import (
 // Server is a specialized server for microservices.
 type Server struct {
     PathReader *peechee.PathReader
-    Logger logging.Logger
+    Logger *logging.Logger
 
     config *Config
     muxer *http.ServeMux
@@ -75,7 +77,7 @@ func createGoServer(
     port int,
     muxer *http.ServeMux,
     tlsConfig *tls.Config,
-    logger logging.Logger,
+    logger *logging.Logger,
 ) *http.Server {
     return &http.Server{
         Addr: fmt.Sprintf("%s:%s", host, strconv.Itoa(port)),
@@ -84,7 +86,9 @@ func createGoServer(
         TLSNextProto: make(
             map[string]func(*http.Server, *tls.Conn, http.Handler),
         ),
-        ErrorLog: logger.GetStdLogger(logging.ERROR),
+        ErrorLog: log.New(
+            logging.NewPseudoWriter(logging.ERROR, logger), "", 0,
+        ),
     }
 }
 
@@ -161,7 +165,7 @@ func (self *Server) GoStart() chan ServerChannelResponse {
 
 // Stop stops the server.
 func (s *Server) Stop() error {
-    s.Logger.Info("Stopping server...").Send()
+    s.Logger.Info("Stopping server...")
     err := s.internalServer.Close()
     if err != nil {
         return errors.Wrap(err, "Error while stopping server")
@@ -171,14 +175,11 @@ func (s *Server) Stop() error {
 }
 
 func (s Server) startInternalServer() error {
-    s.Logger.
-        Info(fmt.Sprintf(
-            "Starting server...",
-        )).
-        With("host", s.config.Host).
-        With("port", s.config.Port).
-        With("using_encryption", s.encryptionEnabled).
-        Send()
+    s.Logger.Info("Starting server...", logging.Extras{
+            "host": s.config.Host,
+            "port": s.config.Port,
+            "using_encryption": s.encryptionEnabled,
+    })
     if s.encryptionEnabled {
         return s.internalServer.ListenAndServeTLS("", "")
     }
@@ -200,7 +201,7 @@ func (s Server) goStartUp(outCh chan ServerChannelResponse) {
             Error: err,
         }
     } else {
-        s.Logger.Info("Server shutdown.").Send()
+        s.Logger.Info("Server shutdown.")
         outCh <- ServerChannelResponse{
             Type: ServerShutdownChannelResponse,
             Error: nil,
@@ -211,14 +212,17 @@ func (s Server) goStartUp(outCh chan ServerChannelResponse) {
 func (s *Server) startUp() error {
     err := s.startInternalServer()
     if err != http.ErrServerClosed {
-        s.Logger.
-            Error(fmt.Sprintf("%s", err)).
-            With("config", s.internalServer.TLSConfig).
-            Send()
+        s.Logger.Exception(
+            err,
+            "Error while trying to run server.",
+            logging.Extras{
+                "tls_config": s.internalServer.TLSConfig,
+            },
+        )
         return errors.Wrap(err, "Error while running server")
     }
 
-    s.Logger.Info("Server shutdown.").Send()
+    s.Logger.Info("Server shutdown.")
     return nil
 }
 
@@ -275,7 +279,7 @@ func (self Server) respondToMethod(
                     "You have not set up your %s method for this route.",
                     reqMethod.String(),
                 ),
-            ).Send()
+            )
 
             var methodStrings []string
             methodMap := map[RequestMethod]bool{
@@ -316,18 +320,14 @@ func (self Server) respondToMethod(
         r, w, pathVariables, self.config, self.Logger, self.defaultEncoding,
     )
     if err != nil {
-        self.Logger.Error("Error while creating Transactor.").With(
-            "error", err,
-        ).Send()
+        self.Logger.Exception(err, "Error while creating Transactor.")
         return responses.ErrorResponse(err)
     }
 
     for _, middleware := range self.preActionMiddleware {
         data, err := middleware(r.Context(), transactor)
         if err != nil {
-            self.Logger.Error("Error in pre-action middleware.").With(
-                "error", err,
-            ).Send()
+            self.Logger.Exception(err, "Error in pre-action middleware.")
             return responses.ErrorResponse(err)
         }
         if data != nil {
@@ -336,20 +336,18 @@ func (self Server) respondToMethod(
         }
     }
 
-    self.Logger.Info("Handling HTTP request.").
-        With("path", r.URL.Path).
-        With("method", r.Method).
-        With("sequence_id", transactor.SequenceId()).
-        Send()
+    self.Logger.Info("Handling HTTP request.", logging.Extras{
+        "path": r.URL.Path,
+        "method": r.Method,
+        "sequence_id": transactor.SequenceId(),
+    })
 
     response := rcc(r.Context(), transactor)
 
     for _, middleware := range self.postActionMiddleware {
         data, err := middleware(r.Context(), transactor, response)
         if err != nil {
-            self.Logger.Error("Error in pre-action middleware.").With(
-                "error", err,
-            ).Send()
+            self.Logger.Exception(err, "Error in pre-action middleware.")
             return responses.ErrorResponse(err)
         }
         if data != nil {
@@ -389,14 +387,13 @@ func responseProcessor(
         var ctx context.Context
         defer func() {
             if rawErr := recover(); rawErr != nil {
-                errString := fmt.Sprintf("%+v", rawErr)
+                newErr := errors.New(fmt.Sprintf("%+v", rawErr))
                 if err, ok := rawErr.(error); ok {
-                    wrappedErr := errors.WithStack(err)
-                    errString = fmt.Sprintf("%+v", wrappedErr)
+                    newErr = errors.WithStack(err)
                 }
-                server.Logger.Error("Panic while handling controller.").With(
-                    "error", errString,
-                ).Send()
+                server.Logger.Exception(
+                    newErr, "Panic while handling controller.",
+                )
                 w.WriteHeader(http.StatusInternalServerError)
                 fmt.Fprint(w, "Internal Server Error")
             }
@@ -408,11 +405,13 @@ func responseProcessor(
         responseData := handlerFunc(w, r)
         if unexpectedErr := responseData.Error(); unexpectedErr != nil {
             if unexpectedErr.Error() != "" {
-                server.Logger.Error(
+                server.Logger.Exception(
+                    unexpectedErr,
                     "Unexpected error in controller route.",
-                ).With(
-                    "error", fmt.Sprint(unexpectedErr),
-                ).And("sequence_id", sequenceId).Send()
+                    logging.Extras{
+                        "sequence_id": sequenceId,
+                    },
+                )
             }
             w.WriteHeader(http.StatusInternalServerError)
             fmt.Fprint(w, "Internal Server Error")
@@ -433,16 +432,19 @@ func (s *Server) defaultMultiRouteControllerWrapper(
     ) responses.Data {
         sequenceId, err := ContextSequenceId(r.Context())
         if err != nil {
-            s.Logger.Warn("Unable to extract SequenceId from context.").With(
-                "error", err,
-            ).Send()
+            s.Logger.Warn(
+                "Unable to extract SequenceId from context.",
+                logging.Extras{
+                    "error": err,
+                },
+            )
         }
-        s.Logger.Info("HTTP request made.").
-            With("path", r.URL.Path).
-            With("requestor", r.RemoteAddr).
-            With("method", r.Method).
-            With("sequence_id", sequenceId).
-            Send()
+        s.Logger.Info("HTTP request made.", logging.Extras{
+            "path": r.URL.Path,
+            "requestor": r.RemoteAddr,
+            "method": r.Method,
+            "sequence_id": sequenceId,
+        })
 
         matchingRouteControllerHelpers := s.getMatchingControllers(
             r.URL.Path, basePath,
@@ -546,16 +548,18 @@ func newServer(options []ServerOption) (*Server, error) {
 
     logger := svOpts.logger
     if logger == nil {
-        logLevels, err := logging.GetLogLevelsForString("warn")
+        var err error
+        logger, err = logging.NewLogger(
+            "vial.server.logger",
+            logging.WithFormat(logging.JSON),
+            logging.WithLogWriters(os.Stdout),
+            logging.WithLogLevel(logging.INFO),
+        )
         if err != nil {
             return nil, errors.Wrap(
-                err,
-                "Error while trying to get log level for logger",
+                err, "Error while trying to create logger for server",
             )
         }
-        logger = logging.GetNewLogger(
-            "vial", logging.JSON, logging.Stdout, logLevels,
-        )
     }
 
     preActionMiddleware := svOpts.preActionMiddleware

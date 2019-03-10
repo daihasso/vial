@@ -3,9 +3,9 @@ package vial
 import (
     "io"
 
-    "github.com/daihasso/slogging"
     "github.com/pkg/errors"
-    "daihasso.net/library/tote"
+    "github.com/daihasso/slogging"
+    "github.com/daihasso/tote"
     "github.com/daihasso/peechee"
 
     "daihasso.net/library/vial/responses"
@@ -17,7 +17,7 @@ type serverOptions struct {
     preActionMiddleware []PreMiddleWare
     postActionMiddleware []PostMiddleWare
     config *Config
-    logger logging.Logger
+    logger *logging.Logger
     pathReader *peechee.PathReader
     defaultEncoding responses.EncodingType
 
@@ -87,7 +87,7 @@ func AddConfigFromFile(configFilePath string) ServerOption {
 }
 
 // AddCustomLogger will set the server logger to the provided logger.
-func AddCustomLogger(logger logging.Logger) ServerOption {
+func AddCustomLogger(logger *logging.Logger) ServerOption {
     return func(svOpts *serverOptions) error {
         svOpts.logger = logger
 

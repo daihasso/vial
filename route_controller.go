@@ -6,8 +6,6 @@ import(
     "reflect"
     "strings"
 
-    "github.com/pkg/errors"
-
     "daihasso.net/library/vial/responses"
 )
 
