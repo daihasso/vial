@@ -4,6 +4,7 @@ import (
     "net/http"
     "testing"
 
+    "github.com/google/uuid"
     gm "github.com/onsi/gomega"
 )
 
@@ -13,7 +14,7 @@ func TestRequestPathString(t *testing.T) {
     req, err := http.NewRequest("GET", "/thread/bar", nil)
     g.Expect(err).To(gm.BeNil())
 
-    srvReq := NewServerRequest(req, map[string]string{
+    srvReq := NewInboundRequest(req, PathParams{
         "foo": "bar",
     })
 
@@ -28,8 +29,8 @@ func TestRequestPathInt(t *testing.T) {
     req, err := http.NewRequest("GET", "/thread/52", nil)
     g.Expect(err).To(gm.BeNil())
 
-    srvReq := NewServerRequest(req, map[string]string{
-        "foo": "52",
+    srvReq := NewInboundRequest(req, PathParams{
+        "foo": 52,
     })
 
     val, ok := srvReq.PathInt("foo")
@@ -45,8 +46,11 @@ func TestRequestPathUUID(t *testing.T) {
     )
     g.Expect(err).To(gm.BeNil())
 
-    srvReq := NewServerRequest(req, map[string]string{
-        "foo": "781d3d17bbbb4b798c4875e326e55275",
+    expectedUuid := "781d3d17bbbb4b798c4875e326e55275"
+    actualUuid, err := uuid.Parse(expectedUuid)
+    g.Expect(err).To(gm.BeNil())
+    srvReq := NewInboundRequest(req, PathParams{
+        "foo": actualUuid,
     })
 
     val, ok := srvReq.PathUUID("foo")
@@ -60,7 +64,7 @@ func TestRequestQueryParams(t *testing.T) {
     req, err := http.NewRequest("GET", "/foo?bar=baz", nil)
     g.Expect(err).To(gm.BeNil())
 
-    srvReq := NewServerRequest(req, map[string]string{})
+    srvReq := NewInboundRequest(req, PathParams{})
 
     g.Expect(srvReq.QueryParams()).To(
         gm.HaveKeyWithValue("bar", []string{"baz"}),
@@ -73,7 +77,7 @@ func TestRequestQueryParam(t *testing.T) {
     req, err := http.NewRequest("GET", "/foo?bar=baz&bar=baz2", nil)
     g.Expect(err).To(gm.BeNil())
 
-    srvReq := NewServerRequest(req, map[string]string{})
+    srvReq := NewInboundRequest(req, PathParams{})
 
     val, ok := srvReq.QueryParam("bar")
     g.Expect(ok).To(gm.BeTrue())
@@ -86,7 +90,7 @@ func TestRequestQueryParamMultiple(t *testing.T) {
     req, err := http.NewRequest("GET", "/foo?bar=baz&bar=baz2", nil)
     g.Expect(err).To(gm.BeNil())
 
-    srvReq := NewServerRequest(req, map[string]string{})
+    srvReq := NewInboundRequest(req, PathParams{})
 
     val, ok := srvReq.QueryParamMultiple("bar")
     g.Expect(ok).To(gm.BeTrue())
@@ -101,7 +105,7 @@ func TestRequestPathWrongType(t *testing.T) {
     )
     g.Expect(err).To(gm.BeNil())
 
-    srvReq := NewServerRequest(req, map[string]string{
+    srvReq := NewInboundRequest(req, PathParams{
         "foo": "781d3d17bbbb4b798c4875e326e55275",
     })
 

@@ -315,7 +315,29 @@ func (self Server) respondToMethod(
         }
     }
 
-    pathVariables := rch.route.PathParams(r.URL.Path)
+    pathVariables, err := rch.route.PathParams(r.URL.Path)
+    if err != nil {
+        self.Logger.Exception(err, "Failed to parse path params properly.")
+        sequenceId, err := ContextSequenceId(r.Context())
+        if err != nil {
+            return responses.ErrorResponse(err)
+        }
+        builder, err := responses.NewBuilder(
+            r.Context(),
+            self.defaultEncoding,
+            responses.AddHeader(
+                SequenceIdHeader,
+                sequenceId.String(),
+            ),
+        )
+        if err != nil {
+            return responses.ErrorResponse(err)
+        }
+        return builder.Abort(
+            http.StatusNotFound,
+            neterr.RouteNotSetupError,
+        )
+    }
     transactor, err := NewTransactor(
         r, w, pathVariables, self.config, self.Logger, self.defaultEncoding,
     )
