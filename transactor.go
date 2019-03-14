@@ -22,7 +22,7 @@ type Transactor struct {
     Builder *responses.Builder
     Config *Config
     Logger *logging.Logger
-    Request *Request
+    Request *InboundRequest
 
     context context.Context
 }
@@ -162,7 +162,7 @@ func (i Transactor) SequenceId() *uuid.UUID {
 func NewTransactor(
     request *http.Request,
     responseWriter http.ResponseWriter,
-    variables map[string]string,
+    variables PathParams,
     config *Config,
     logger *logging.Logger,
     encodingType responses.EncodingType,
@@ -181,10 +181,10 @@ func NewTransactor(
         )
     }
 
-    newRequest := NewServerRequest(
-        request,
-        variables,
+    newRequest := NewInboundRequest(
+        request, variables,
     )
+
     transactor := &Transactor{
         Builder: builder,
         Config: config,

@@ -150,7 +150,6 @@ func MethodsForRouteController(
     path string,
     routeControllers ...RouteController,
 ) map[RequestMethod]RouteControllerCaller {
-    fmt.Println(routeControllers)
     methods := make(map[RequestMethod]RouteControllerCaller)
 
     for i, rc := range routeControllers {

@@ -64,7 +64,7 @@ func TestSwaggerGet(t *testing.T) {
     rr := httptest.NewRecorder()
 
     transactor, err := NewTransactor(
-        req, rr, map[string]string{}, &config, logger, responses.JSONEncoding,
+        req, rr, PathParams{}, &config, logger, responses.JSONEncoding,
     )
     g.Expect(err).To(gm.BeNil())
 
@@ -120,7 +120,7 @@ func TestSwaggerGetJSON(t *testing.T) {
     rr := httptest.NewRecorder()
 
     transactor, err := NewTransactor(
-        req, rr, map[string]string{}, &config, logger, responses.JSONEncoding,
+        req, rr, PathParams{}, &config, logger, responses.JSONEncoding,
     )
     g.Expect(err).To(gm.BeNil())
 

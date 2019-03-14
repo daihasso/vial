@@ -17,12 +17,6 @@ var variableParse = regexp.MustCompile(
 // baseRegex grabs the URL up until the first path parameter.
 var baseRegex = regexp.MustCompile(`([^<]+)`)
 
-// uuidRegex matches a UUID.
-var uuidRegex = `(?P<%s>[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?` +
-    `[0-9a-fA-F]{4}-?[0-9a-fA-F]{12})`
-var intRegex = `(?P<%s>[0-9]+)`
-var floatRegex = `(?P<%s>[0-9]*\.[0-9]+)`
-
 // Route is a broken-down version of a route string.
 type Route struct {
     original string
@@ -37,46 +31,74 @@ func (r Route) Matches(url string) bool {
 
 // PathParams will take a url and parse the variables according to
 // the route definition.
-func (r Route) PathParams(url string) map[string]string {
-    pathParamNameValueMap := getMappedValues(r.matcher, url)
-    return pathParamNameValueMap
+func (r Route) PathParams(url string) (PathParams, error) {
+    pathParamNameValueMap, err := getMappedValues(r.matcher, url)
+    if err != nil {
+        return nil, errors.Wrap(
+            err, "Error while getting path parameter values",
+        )
+    }
+    return pathParamNameValueMap, nil
+}
+
+func coerceType(key, typ, stringVal string) (interface{}, error) {
+    pathParamMatcher, ok := GetPathParamMatcher(typ)
+    if !ok {
+        return nil, errors.Errorf(
+            "No PathParamMatcher found for type '%s'", typ,
+        )
+    }
+    val, err := pathParamMatcher.Coercer(stringVal)
+    if err != nil {
+        return nil, errors.Wrap(
+            err, "Error while converting path parameter '%s' to type '%s'",
+        )
+    }
+
+    return val, nil
 }
 
 // getMappedValues matches the url and extracts the defined parameters.
-func getMappedValues(regex *regexp.Regexp, input string) map[string]string {
+func getMappedValues(regex *regexp.Regexp, input string) (PathParams, error) {
     subMatch := regex.FindStringSubmatch(input)
     matchNames := regex.SubexpNames()
     subMatch, matchNames = subMatch[1:], matchNames[1:]
-    mappedValues := make(map[string]string, len(subMatch))
+    mappedValues := make(PathParams, len(subMatch))
     for i := range matchNames {
-        mappedValues[matchNames[i]] = subMatch[i]
+        keyParts := strings.SplitN(matchNames[i], "_", 2)
+        typ, key := keyParts[0], keyParts[1]
+        val, err := coerceType(key, typ, subMatch[i])
+        if err != nil {
+            return nil, err
+        }
+        mappedValues[key] = val
     }
-    return mappedValues
+    return mappedValues, nil
 }
 
 func parseURLMatch(match string) string {
     variableMatches := variableParse.FindStringSubmatch(match)
-    var newString string
+    finalRegexTemplate := `(?P<%s_%s>%s)`
+    var finalRegex string
     if len(variableMatches) == 3 {
         variableType := strings.ToLower(variableMatches[1])
-        switch variableType {
-        case "float":
-            newString = floatRegex
-        case "integer", "int":
-            newString = intRegex
-        case "uuid":
-            newString = uuidRegex
-        case "string", "":
-            newString = `(?P<%s>[^\/\\]+)`
-        default:
+        pathParamMatcher, ok := GetPathParamMatcher(variableType)
+        if !ok {
             panic(errors.Errorf("Unknown variable type: %s", variableType))
         }
-        newString = fmt.Sprintf(newString, variableMatches[2])
+
+        finalRegex = fmt.Sprintf(
+            finalRegexTemplate,
+            pathParamMatcher.prefix(),
+            variableMatches[2],
+            pathParamMatcher.RegexString,
+        )
     } else {
         panic(errors.Errorf("Incorrect format: %s", match))
 
     }
-    return newString
+
+    return finalRegex
 }
 
 // ParseRoute parses a route string with path param variable matchers into a
