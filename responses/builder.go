@@ -220,6 +220,12 @@ func (self *Builder) Finish(additionals ...AdditionalAttribute) Data {
     return *self.prepare(additionals)
 }
 
+// ChangeContext changes the existing context on the builder to the
+// provided one. Use this with caution.
+func (self *Builder) ChangeContext(ctx context.Context) {
+    self.ctx = ctx
+}
+
 // NewBuilder generates a new builder to help generate a response Data struct.
 func NewBuilder(
     ctx context.Context,

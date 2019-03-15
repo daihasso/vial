@@ -357,21 +357,21 @@ func (self Server) respondToMethod(
             return *data
         }
         if newCtx != nil {
-            r = r.WithContext(*newCtx)
-            transactor.context = *newCtx
+            transactor.ChangeContext(*newCtx)
+            r = &transactor.Request.Request
         }
     }
 
     self.Logger.Debug("Handling HTTP request.", logging.Extras{
-        "path": r.URL.Path,
-        "method": r.Method,
+        "path": transactor.Request.URL.Path,
+        "method": transactor.Request.Method,
         "sequence_id": transactor.SequenceId(),
     })
 
-    response := rcc(r.Context(), transactor)
+    response := rcc(transactor.Context(), transactor)
 
     for _, middleware := range self.postActionMiddleware {
-        data, err := middleware(r.Context(), transactor, response)
+        data, err := middleware(transactor.Context(), transactor, response)
         if err != nil {
             self.Logger.Exception(err, "Error in pre-action middleware.")
             return responses.ErrorResponse(err)
@@ -426,6 +426,7 @@ func responseProcessor(
         }()
 
         ctx, _ = handleSequenceId(r)
+        ctx = context.WithValue(ctx, ServerLoggerContextKey, server.Logger)
         r = r.WithContext(ctx)
 
         responseData := handlerFunc(w, r)
@@ -498,38 +499,6 @@ func (s *Server) defaultMultiRouteControllerWrapper(
     }
 
     return responseProcessor(requestFuncMatcher, s)
-}
-
-func (self *Server) defaultHandler() (
-    func(w http.ResponseWriter, r *http.Request),
-) {
-    defaultHandler := func(
-        w http.ResponseWriter, r *http.Request,
-    ) responses.Data {
-        sequenceId, err := ContextSequenceId(r.Context())
-        if err != nil {
-            return responses.ErrorResponse(err)
-        }
-
-        builder, err := responses.NewBuilder(
-            r.Context(),
-            self.defaultEncoding,
-            responses.AddHeader(
-                SequenceIdHeader,
-                sequenceId.String(),
-            ),
-        )
-        if err != nil {
-            return responses.ErrorResponse(err)
-        }
-
-        return builder.Abort(
-            http.StatusNotFound,
-            neterr.RouteNotSetupError,
-        )
-    }
-
-    return responseProcessor(defaultHandler, self)
 }
 
 // NewServer creates a bare-bones server.

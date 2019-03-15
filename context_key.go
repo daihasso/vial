@@ -13,6 +13,12 @@ var ContextKeyBase = "vial."
 // This is the key that the Sequence ID is stored under in the context.
 var SequenceIdContextKey = ContextKey("sequence_id")
 
+// This is the key that the server's logger is stored under.
+var ServerLoggerContextKey = ContextKey("server.logger")
+
+// This is the key that the transactor will live under in the request context.
+var TransactorContextKey = ContextKey("transactor")
+
 // ContextKey is a helper for generating a context key prefixed for vial.
 func ContextKey(key string) string {
     return ContextKeyBase + key

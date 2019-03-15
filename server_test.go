@@ -141,7 +141,7 @@ func TestServerBasic(t *testing.T) {
 
     server.muxer.ServeHTTP(rr, req)
 
-    t.Log(rr.HeaderMap)
+    t.Log(rr.Result().Header)
     g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
     g.Expect(rr.Body.String()).To(gm.Equal(expectedBody))
     g.Expect(rr.Header().Get("Sequence-Id")).ToNot(gm.BeEmpty())
@@ -168,7 +168,7 @@ func TestServerBasicEncrypted(t *testing.T) {
 
     server.muxer.ServeHTTP(rr, req)
 
-    t.Log(rr.HeaderMap)
+    t.Log(rr.Result().Header)
     g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
     g.Expect(rr.Body.String()).To(gm.Equal(expectedBody))
     g.Expect(rr.Header().Get("Sequence-Id")).ToNot(gm.BeEmpty())
@@ -222,7 +222,7 @@ func TestServerFuncMultiRoute(t *testing.T) {
 
     server.muxer.ServeHTTP(rr, req)
 
-    t.Log(rr.HeaderMap)
+    t.Log(rr.Result().Header)
     g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
     g.Expect(rr.Body.String()).To(gm.Equal(expectedBody))
     g.Expect(rr.Header().Get("Sequence-Id")).ToNot(gm.BeEmpty())
@@ -231,7 +231,7 @@ func TestServerFuncMultiRoute(t *testing.T) {
 
     server.muxer.ServeHTTP(rr, req2)
 
-    t.Log(rr.HeaderMap)
+    t.Log(rr.Result().Header)
     g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
     g.Expect(rr.Body.String()).To(gm.Equal(expectedBody))
     g.Expect(rr.Header().Get("Sequence-Id")).ToNot(gm.BeEmpty())
@@ -279,7 +279,7 @@ func TestServerSimpleRoute(t *testing.T) {
 
     server.muxer.ServeHTTP(rr, req)
 
-    t.Log(rr.HeaderMap)
+    t.Log(rr.Result().Header)
     g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
     g.Expect(rr.Body.String()).To(gm.Equal(expectedBody))
     g.Expect(rr.Header().Get("Sequence-Id")).ToNot(gm.BeEmpty())
@@ -323,7 +323,7 @@ func TestServerDefaultOptions(t *testing.T) {
 
     server.muxer.ServeHTTP(rr, req)
 
-    t.Log(rr.HeaderMap)
+    t.Log(rr.Result().Header)
     g.Expect(rr.Header().Get("Access-Control-Allow-Methods")).To(
         gm.Equal("OPTIONS, GET, POST"),
     )
@@ -343,7 +343,7 @@ func TestServerBadMethod(t *testing.T) {
 
     server.muxer.ServeHTTP(rr, req)
 
-    t.Log(rr.HeaderMap)
+    t.Log(rr.Result().Header)
     t.Log(rr.Body.String())
     g.Expect(rr.Code).To(gm.Equal(http.StatusMethodNotAllowed))
     g.Expect(rr.Header().Get("Allow")).To(
@@ -365,7 +365,7 @@ func TestServerBasicGoStart(t *testing.T) {
         t.Log("S resp", resp)
         switch resp.Type {
             case ServerStartChannelResponse:
-            time.Sleep(10)
+            time.Sleep(1 * time.Millisecond)
             err := server.Stop()
             g.Expect(err).To(gm.BeNil())
             continue
@@ -396,7 +396,7 @@ func TestServerEncryptedGoStart(t *testing.T) {
         t.Log("S resp", resp)
         switch resp.Type {
             case ServerStartChannelResponse:
-            time.Sleep(10)
+            time.Sleep(1 * time.Millisecond)
             err := server.Stop()
             g.Expect(err).To(gm.BeNil())
             continue
@@ -440,7 +440,7 @@ func TestServerMissingRoute(t *testing.T) {
 
     server.muxer.ServeHTTP(rr, req)
 
-    t.Log(rr.HeaderMap)
+    t.Log(rr.Result().Header)
     g.Expect(rr.Code).To(gm.Equal(http.StatusNotFound))
     // TODO: Need to make sequence ids return always. This requires somehow
     // hijacking the default 404 handler. It will take some work. It might
@@ -488,7 +488,7 @@ func TestServerPreActionModifyContext(t *testing.T) {
 
     server.muxer.ServeHTTP(rr, req)
 
-    t.Log(rr.HeaderMap)
+    t.Log(rr.Result().Header)
     g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
     g.Expect(rr.Body.String()).To(gm.Equal(`{"context_value":"bar"}`))
 }
@@ -517,7 +517,7 @@ func TestServerPreActionHijackReturn(t *testing.T) {
 
     server.muxer.ServeHTTP(rr, req)
 
-    t.Log(rr.HeaderMap)
+    t.Log(rr.Result().Header)
     g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
     g.Expect(rr.Body.String()).To(gm.Equal(`HIJACKED!`))
 }
@@ -551,7 +551,7 @@ func TestServerPostActionHijackReturn(t *testing.T) {
 
     server.muxer.ServeHTTP(rr, req)
 
-    t.Log(rr.HeaderMap)
+    t.Log(rr.Result().Header)
     g.Expect(rr.Body.String()).To(gm.Equal(expectedBody))
     g.Expect(rr.Code).To(gm.Equal(http.StatusAccepted))
 }
@@ -587,7 +587,7 @@ func TestServerBasicEncryptedFilePaths(t *testing.T) {
 
     server.muxer.ServeHTTP(rr, req)
 
-    t.Log(rr.HeaderMap)
+    t.Log(rr.Result().Header)
     g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
     g.Expect(rr.Body.String()).To(gm.Equal(expectedBody))
     g.Expect(rr.Header().Get("Sequence-Id")).ToNot(gm.BeEmpty())
@@ -632,7 +632,7 @@ func TestServerBasicEncryptedFilePathsViaConfig(t *testing.T) {
 
     server.muxer.ServeHTTP(rr, req)
 
-    t.Log(rr.HeaderMap)
+    t.Log(rr.Result().Header)
     g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
     g.Expect(rr.Body.String()).To(gm.Equal(expectedBody))
     g.Expect(rr.Header().Get("Sequence-Id")).ToNot(gm.BeEmpty())

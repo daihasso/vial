@@ -23,8 +23,6 @@ type Transactor struct {
     Config *Config
     Logger *logging.Logger
     Request *InboundRequest
-
-    context context.Context
 }
 
 func marshalItem(item interface{}) (string, error) {
@@ -44,6 +42,18 @@ func marshalItem(item interface{}) (string, error) {
     }
 
     return outputString, nil
+}
+
+// ChangeContext changes the existing context on the transactor to the
+// provided one. Use this with caution.
+func (self *Transactor) ChangeContext(ctx context.Context) {
+    self.Request = self.Request.WithContext(ctx)
+    self.Builder.ChangeContext(ctx)
+}
+
+// Context is a helper for retrieving the request context.
+func (self Transactor) Context() context.Context {
+    return self.Request.Context()
 }
 
 // AddHeader marshales content and adds it as a header key.
@@ -80,21 +90,6 @@ func (t *Transactor) SetHeader(key string, content interface{}) error {
 
     return nil
 }
-
-/*
-/* TODO: Re-enable after JWT library is done.
-// AddJWT adds JWT as authorization.
-func (t *Transactor) AddJWT(jwt *JWT) {
-    jwtString, err := jwt.Finalize()
-    if err != nil {
-        panic(err)
-    }
-    t.Builder.SetHeader(
-        "Authorization",
-        fmt.Sprintf("Bearer %s", jwtString),
-    )
-}
-*/
 
 // RequestBodyString return the request body as a string.
 func (i *Transactor) RequestBodyString() (string, error) {
@@ -151,10 +146,10 @@ func (self Transactor) Abort(
 }
 
 // SequenceId grabs the current Sequence ID from the context.
-func (i Transactor) SequenceId() *uuid.UUID {
+func (self Transactor) SequenceId() *uuid.UUID {
     // NOTE: This method expects the SequenceId to be in the context by now. It
     //       may end up returning nil if something goes awry.
-    sequenceId, _ := ContextSequenceId(i.context)
+    sequenceId, _ := ContextSequenceId(self.Request.Context())
     return sequenceId
 }
 
@@ -190,8 +185,6 @@ func NewTransactor(
         Config: config,
         Request: newRequest,
         Logger: nil,
-
-        context: existingContext,
     }
 
     loggerWithSequenceId, err := logging.CloneLogger(
@@ -221,6 +214,11 @@ func NewTransactor(
             )
         }
     }
+
+    ctxWithSelf := context.WithValue(
+        transactor.Context(), TransactorContextKey, transactor,
+    )
+    transactor.ChangeContext(ctxWithSelf)
 
     return transactor, nil
 }
