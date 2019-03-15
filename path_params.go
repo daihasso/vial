@@ -34,7 +34,8 @@ func IsPathParamDoesNotExist(err error) bool {
     return pathParamDoesNotExistRegex.MatchString(err.Error())
 }
 
-// PathParams is a convenience wrapper around a map holding coerced path values.
+// PathParams is a convenience wrapper around a map holding coerced path
+// values.
 type PathParams map[string]interface{}
 
 // String retrieves and coerces a string.

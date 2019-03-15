@@ -23,6 +23,21 @@ func TestRequestPathString(t *testing.T) {
     g.Expect(val).To(gm.Equal("bar"))
 }
 
+func TestRequestPathFloat(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+    req, err := http.NewRequest("GET", "/thread/52", nil)
+    g.Expect(err).To(gm.BeNil())
+
+    srvReq := NewInboundRequest(req, PathParams{
+        "foo": 52.1,
+    })
+
+    val, ok := srvReq.PathFloat("foo")
+    g.Expect(ok).To(gm.BeTrue())
+    g.Expect(val).To(gm.Equal(52.1))
+}
+
 func TestRequestPathInt(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 

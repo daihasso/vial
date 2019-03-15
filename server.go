@@ -347,7 +347,7 @@ func (self Server) respondToMethod(
     }
 
     for _, middleware := range self.preActionMiddleware {
-        data, err := middleware(r.Context(), transactor)
+        data, newCtx, err := middleware(r.Context(), transactor)
         if err != nil {
             self.Logger.Exception(err, "Error in pre-action middleware.")
             return responses.ErrorResponse(err)
@@ -356,9 +356,13 @@ func (self Server) respondToMethod(
             // If we have data from our middleware return early with it.
             return *data
         }
+        if newCtx != nil {
+            r = r.WithContext(*newCtx)
+            transactor.context = *newCtx
+        }
     }
 
-    self.Logger.Info("Handling HTTP request.", logging.Extras{
+    self.Logger.Debug("Handling HTTP request.", logging.Extras{
         "path": r.URL.Path,
         "method": r.Method,
         "sequence_id": transactor.SequenceId(),

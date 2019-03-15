@@ -177,6 +177,66 @@ func TestServerBasicEncrypted(t *testing.T) {
     ))
 }
 
+func TestServerFuncMultiRoute(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+    logger := setupLogging(t, g)
+
+    expectedBody := `{"hello":"tester"}`
+
+    req, err := http.NewRequest("GET", "/hello/tester", nil)
+    g.Expect(err).To(gm.BeNil())
+    req2, err := http.NewRequest("POST", "/hello/tester", nil)
+    g.Expect(err).To(gm.BeNil())
+
+    rr := httptest.NewRecorder()
+    server, err := NewServer(AddCustomLogger(logger))
+    g.Expect(err).To(gm.BeNil())
+
+    err = server.AddController(
+        "/hello/<name>",
+        FuncHandlerMulti(
+            func(transactor *Transactor) responses.Data {
+                name, ok := transactor.Request.PathString("name")
+                if !ok {
+                    return transactor.Abort(
+                        400,
+                        neterr.NewCodedError(
+                            1,
+                            "Could not retrieve name from path",
+                        ),
+                    )
+                }
+                return transactor.Respond(
+                    200,
+                    responses.Body(map[string]string{
+                        "hello": name,
+                    }),
+                )
+            },
+            "get",
+            "post",
+        ),
+    )
+    g.Expect(err).To(gm.BeNil())
+
+    server.muxer.ServeHTTP(rr, req)
+
+    t.Log(rr.HeaderMap)
+    g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
+    g.Expect(rr.Body.String()).To(gm.Equal(expectedBody))
+    g.Expect(rr.Header().Get("Sequence-Id")).ToNot(gm.BeEmpty())
+
+    rr = httptest.NewRecorder()
+
+    server.muxer.ServeHTTP(rr, req2)
+
+    t.Log(rr.HeaderMap)
+    g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
+    g.Expect(rr.Body.String()).To(gm.Equal(expectedBody))
+    g.Expect(rr.Header().Get("Sequence-Id")).ToNot(gm.BeEmpty())
+}
+
 func TestServerSimpleRoute(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
@@ -388,6 +448,51 @@ func TestServerMissingRoute(t *testing.T) {
     // g.Expect(rr.Header().Get("Sequence-Id")).ToNot(gm.BeEmpty())
 }
 
+
+func TestServerPreActionModifyContext(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+    logger := setupLogging(t, g)
+
+    req, err := http.NewRequest("GET", "/test/middleware", nil)
+    g.Expect(err).To(gm.BeNil())
+
+    rr := httptest.NewRecorder()
+    server, err := NewServer(
+        AddPreActionMiddleware(
+            func(ctx context.Context, transactor *Transactor) (
+                *responses.Data, *context.Context, error,
+            ) {
+                newCtx := context.WithValue(ctx, "foo", "bar")
+                return nil, &newCtx, nil
+            }),
+        AddCustomLogger(logger),
+    )
+    g.Expect(err).To(gm.BeNil())
+
+    err = server.AddController(
+        "test/middleware",
+        FuncHandler(
+            "get",
+            func(ctx context.Context, transactor *Transactor) responses.Data {
+                return transactor.Respond(
+                    200,
+                    responses.Body(map[string]string{
+                        "context_value": ctx.Value("foo").(string),
+                    }),
+                )
+            },
+        ),
+    )
+    g.Expect(err).To(gm.BeNil())
+
+    server.muxer.ServeHTTP(rr, req)
+
+    t.Log(rr.HeaderMap)
+    g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
+    g.Expect(rr.Body.String()).To(gm.Equal(`{"context_value":"bar"}`))
+}
+
 func TestServerPreActionHijackReturn(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
@@ -399,12 +504,12 @@ func TestServerPreActionHijackReturn(t *testing.T) {
     rr := httptest.NewRecorder()
     server, err := NewServerDefault(AddPreActionMiddleware(
         func(_ context.Context, transactor *Transactor) (
-            *responses.Data, error,
+            *responses.Data, *context.Context, error,
         ) {
             return &responses.Data{
                 Body: []byte(`HIJACKED!`),
                 StatusCode: http.StatusOK,
-            }, nil
+            }, nil, nil
         }),
         AddCustomLogger(logger),
     )
