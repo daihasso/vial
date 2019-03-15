@@ -1,6 +1,7 @@
 package vial
 
 import (
+    "context"
     "net/http"
 
     "github.com/google/uuid"
@@ -10,6 +11,15 @@ import (
 type InboundRequest struct {
     http.Request
     PathParams PathParams
+}
+
+
+// WithContext returns a new InboundRequest with the provided context.
+func (r InboundRequest) WithContext(ctx context.Context) *InboundRequest {
+    return &InboundRequest{
+        Request: *r.Request.WithContext(ctx),
+        PathParams: r.PathParams,
+    }
 }
 
 // PathString returns a variable from the path matching the provided key as
