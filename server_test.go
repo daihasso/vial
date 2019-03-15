@@ -666,3 +666,73 @@ vial:
     // Host should be default value.
     g.Expect(server.GetConfig().Host).To(gm.Equal("127.0.0.1"))
 }
+
+func TestServerLoggerContext(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+    logger := setupLogging(t, g)
+
+    req, err := http.NewRequest("GET", "/test", nil)
+    g.Expect(err).To(gm.BeNil())
+
+    rr := httptest.NewRecorder()
+    server, err := NewServer(AddCustomLogger(logger))
+    g.Expect(err).To(gm.BeNil())
+
+    err = server.AddController(
+        "/test",
+        FuncHandler(
+            "get",
+            func(ctx context.Context, transactor *Transactor) responses.Data {
+                serverLoggerIn := ctx.Value(ServerLoggerContextKey)
+                serverLogger := serverLoggerIn.(*logging.Logger)
+
+                g.Expect(serverLogger == serverLogger)
+
+                t.Log("Logger name:", serverLogger.Identifier())
+
+                return transactor.Respond(
+                    200,
+                )
+            },
+        ),
+    )
+    g.Expect(err).To(gm.BeNil())
+
+    server.muxer.ServeHTTP(rr, req)
+
+    g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
+}
+
+func TestTransactorFromContext(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+    logger := setupLogging(t, g)
+
+    req, err := http.NewRequest("GET", "/test", nil)
+    g.Expect(err).To(gm.BeNil())
+
+    rr := httptest.NewRecorder()
+    server, err := NewServer(AddCustomLogger(logger))
+    g.Expect(err).To(gm.BeNil())
+
+    err = server.AddController(
+        "/test",
+        FuncHandler(
+            "get",
+            func(ctx context.Context, transactor *Transactor) responses.Data {
+                ctxTransactorIn := ctx.Value(TransactorContextKey)
+                ctxTransactor := ctxTransactorIn.(*Transactor)
+
+                g.Expect(ctxTransactor == ctxTransactor)
+
+                return transactor.Respond(200)
+            },
+        ),
+    )
+    g.Expect(err).To(gm.BeNil())
+
+    server.muxer.ServeHTTP(rr, req)
+
+    g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
+}
