@@ -1,7 +1,7 @@
 module github.com/daihasso/vial
 
 require (
-	github.com/daihasso/peechee v0.0.2
+	github.com/daihasso/peechee v0.0.3
 	github.com/daihasso/slogging v1.0.1
 	github.com/daihasso/tote v0.1.0
 	github.com/google/uuid v1.1.0

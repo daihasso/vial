@@ -4,6 +4,8 @@ import (
     "sync"
     "strconv"
     "strings"
+
+    "github.com/google/uuid"
 )
 
 var once sync.Once
@@ -91,7 +93,7 @@ var UUIDPathParamMatcher = &PathParamMatcher{
     RegexString: `[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?` +
     `[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}`,
     Coercer: func(stringVal string) (interface{}, error) {
-        return strconv.ParseFloat(stringVal, 64)
+        return uuid.Parse(stringVal)
     },
 }
 

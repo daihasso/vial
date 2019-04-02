@@ -2,8 +2,12 @@ github.com/DaiHasso/beagle v0.0.2 h1:jXRalHhqekqlpH/eoG9AnDZJUIqJpHEeCeftM1jb+1M
 github.com/DaiHasso/beagle v0.0.2/go.mod h1:RykGAFl0BRYws/JhPr1ntxaKB0tyq1AH1BzXVn/ChAA=
 github.com/aws/aws-sdk-go v1.16.32 h1:/grHp+bt3OAVWkdCQv2YtXkWuu58SuTlH1U8tp25n1c=
 github.com/aws/aws-sdk-go v1.16.32/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
+github.com/daihasso/beagle v0.0.3 h1:lYIvkQ8r3006HOMoo7XiWWiCKu3RyDBqbnCdH4lrE1g=
+github.com/daihasso/beagle v0.0.3/go.mod h1:YriSpzRtRAG7WbDzDz2yQ7olg5mvrKkCY+RJ6R1M4ic=
 github.com/daihasso/peechee v0.0.2 h1:EPYobg8h+x/6nFy4hdUCDvk9de1AdT6+OxX6ngPke5I=
 github.com/daihasso/peechee v0.0.2/go.mod h1:lCu3AHA0XG3rKJskaJp24Ctn3mX1QIVxdfYv+3tyMII=
+github.com/daihasso/peechee v0.0.3 h1:3NDRaXE7642srJv1JnvqopB1/95ON+ZlmrLCyXVxOTk=
+github.com/daihasso/peechee v0.0.3/go.mod h1:Bp8QFfdQQsrjvs8+oeO9U7zZBmU0DyLD+jWpCtIgpw4=
 github.com/daihasso/slogging v1.0.1 h1:O1x8RJ+m7GKFeOxYuPOYY8RkveSM9h8toSaMMKYEVl0=
 github.com/daihasso/slogging v1.0.1/go.mod h1:ZFYsvqiVuSjALLlFAwfBHcpApHbR81P/Ur8cmvAvahw=
 github.com/daihasso/tote v0.1.0 h1:Qp84UI0DVcfrGTaJe7TryD1PcpJ2+eju+NbLA4JsiCA=
