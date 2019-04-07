@@ -382,6 +382,8 @@ func (self Server) respondToMethod(
         }
     }
 
+    transactor.Logger.Close()
+
     return response
 }
 

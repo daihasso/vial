@@ -188,7 +188,10 @@ func NewTransactor(
     }
 
     loggerWithSequenceId, err := logging.CloneLogger(
-        fmt.Sprintf("vial.transactor.logger-%p", newRequest),
+        fmt.Sprintf(
+            "vial.transactor.logger-%s",
+            transactor.SequenceId().String(),
+        ),
         logger,
         logging.WithDefaultExtras(logging.FunctionalExtras(
             logging.ExtrasFuncs{
