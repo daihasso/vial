@@ -79,6 +79,7 @@ func createGoServer(
     tlsConfig *tls.Config,
     logger *logging.Logger,
 ) *http.Server {
+    handleProfiling(muxer)
     return &http.Server{
         Addr: fmt.Sprintf("%s:%s", host, strconv.Itoa(port)),
         Handler: muxer,
