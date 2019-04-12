@@ -164,7 +164,14 @@ func NewTransactor(
     options ...TransactorOption,
 ) (*Transactor, error) {
     existingContext := request.Context()
-    sequenceId, _ := ContextSequenceId(existingContext)
+    sequenceId, err := ContextSequenceId(existingContext)
+    if err != nil {
+        return nil, errors.Wrap(err, "Error retrieving sequence id")
+    }
+    requestId, err := ContextRequestId(existingContext)
+    if err != nil {
+        return nil, errors.Wrap(err, "Error retrieving request id")
+    }
     builder, err := responses.NewBuilder(
         existingContext,
         encodingType,
@@ -189,8 +196,8 @@ func NewTransactor(
 
     loggerWithSequenceId, err := logging.CloneLogger(
         fmt.Sprintf(
-            "vial.transactor.logger-%s",
-            transactor.SequenceId().String(),
+            "vial.transactor-logger-%s",
+            requestId.String(),
         ),
         logger,
         logging.WithDefaultExtras(logging.FunctionalExtras(

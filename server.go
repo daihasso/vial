@@ -404,6 +404,19 @@ func handleSequenceId(r *http.Request) (context.Context, string) {
     return ContextWithSequenceId(r.Context(), sequenceId), sequenceId.String()
 }
 
+func handleRequestId(ctx context.Context) context.Context {
+    requestId, err := uuid.NewRandom()
+    if err != nil {
+        panic(errors.Wrap(
+            err, "Failed to generated request id",
+        ))
+    }
+
+    return context.WithValue(
+        ctx, RequestIdContextKey, requestId.String(),
+    )
+}
+
 type requestHandlerFunc func(
     w http.ResponseWriter, r *http.Request,
 ) responses.Data
@@ -429,6 +442,7 @@ func responseProcessor(
         }()
 
         ctx, _ = handleSequenceId(r)
+        ctx = handleRequestId(ctx)
         ctx = context.WithValue(ctx, ServerLoggerContextKey, server.Logger)
         r = r.WithContext(ctx)
 

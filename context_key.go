@@ -19,6 +19,9 @@ var ServerLoggerContextKey = ContextKey("server.logger")
 // This is the key that the transactor will live under in the request context.
 var TransactorContextKey = ContextKey("transactor")
 
+// This is the key that the Sequence ID is stored under in the context.
+var RequestIdContextKey = ContextKey("request_id")
+
 // ContextKey is a helper for generating a context key prefixed for vial.
 func ContextKey(key string) string {
     return ContextKeyBase + key
@@ -58,4 +61,30 @@ func ContextSequenceId(ctx context.Context) (*uuid.UUID, error) {
     }
 
     return &sequenceId, nil
+}
+
+func ContextRequestId(ctx context.Context) (*uuid.UUID, error) {
+    requestIdIn := ctx.Value(RequestIdContextKey)
+    if requestIdIn == nil {
+        return nil, errors.New(
+            "RequestId not in context. Is this call made via vial?",
+        )
+    }
+
+    requestIdString, ok := requestIdIn.(string)
+    if !ok {
+        return nil, errors.New(
+            "Value of RequestId in context is not a string",
+        )
+    }
+
+    requestId, err := uuid.Parse(requestIdString)
+    if err != nil {
+        return nil, errors.Wrap(
+            err,
+            "Value of RequestId in context is not a proper UUID",
+        )
+    }
+
+    return &requestId, nil
 }
