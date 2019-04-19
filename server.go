@@ -441,6 +441,12 @@ func responseProcessor(
             }
         }()
 
+        // Add a reference to ourself to the context.
+        r = r.WithContext(context.WithValue(
+            r.Context(), ServerContextKey, server,
+        ))
+
+        // Add our sequence id, request id & server logger to the context.
         ctx, _ = handleSequenceId(r)
         ctx = handleRequestId(ctx)
         ctx = context.WithValue(ctx, ServerLoggerContextKey, server.Logger)
@@ -474,6 +480,7 @@ func (s *Server) defaultMultiRouteControllerWrapper(
         w http.ResponseWriter,
         r *http.Request,
     ) responses.Data {
+        // Add our sequence id to the context.
         sequenceId, err := ContextSequenceId(r.Context())
         if err != nil {
             s.Logger.Warn(

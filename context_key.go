@@ -13,6 +13,9 @@ var ContextKeyBase = "vial."
 // This is the key that the Sequence ID is stored under in the context.
 var SequenceIdContextKey = ContextKey("sequence_id")
 
+// This is the key that the server is stored under.
+var ServerContextKey = ContextKey("server")
+
 // This is the key that the server's logger is stored under.
 var ServerLoggerContextKey = ContextKey("server.logger")
 
