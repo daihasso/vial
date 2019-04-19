@@ -736,3 +736,187 @@ func TestTransactorFromContext(t *testing.T) {
 
     g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
 }
+
+func TestUrlFor(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+    logger := setupLogging(t, g)
+
+    req, err := http.NewRequest("GET", "/test2", nil)
+    g.Expect(err).To(gm.BeNil())
+
+    rr := httptest.NewRecorder()
+    server, err := NewServer(AddCustomLogger(logger))
+    g.Expect(err).To(gm.BeNil())
+    handler := func(transactor *Transactor) responses.Data {
+        return transactor.Respond(200)
+    }
+
+    handler2 := func(transactor *Transactor) responses.Data {
+        return transactor.Respond(
+            200,
+            responses.Body(transactor.UrlFor(handler)),
+        )
+    }
+
+    err = server.AddController(
+        "/test",
+        FuncHandler(
+            "get",
+            handler,
+        ),
+    )
+    g.Expect(err).To(gm.BeNil())
+    err = server.AddController(
+        "/test2",
+        FuncHandler(
+            "get",
+            handler2,
+        ),
+    )
+    g.Expect(err).To(gm.BeNil())
+
+    server.muxer.ServeHTTP(rr, req)
+
+    g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
+    g.Expect(rr.Body.String()).To(gm.Equal("/test"))
+}
+
+func TestUrlForVariableSub(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+    logger := setupLogging(t, g)
+
+    req, err := http.NewRequest("GET", "/test2", nil)
+    g.Expect(err).To(gm.BeNil())
+
+    rr := httptest.NewRecorder()
+    server, err := NewServer(AddCustomLogger(logger))
+    g.Expect(err).To(gm.BeNil())
+    handler := func(transactor *Transactor) responses.Data {
+        return transactor.Respond(200)
+    }
+
+    handler2 := func(transactor *Transactor) responses.Data {
+        return transactor.Respond(
+            200,
+            responses.Body(transactor.UrlFor(handler, UrlParamValues{
+                "foo": 5,
+            })),
+        )
+    }
+
+    err = server.AddController(
+        "/test/<int:foo>",
+        FuncHandler(
+            "get",
+            handler,
+        ),
+    )
+    g.Expect(err).To(gm.BeNil())
+    err = server.AddController(
+        "/test2",
+        FuncHandler(
+            "get",
+            handler2,
+        ),
+    )
+    g.Expect(err).To(gm.BeNil())
+
+    server.muxer.ServeHTTP(rr, req)
+
+    g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
+    g.Expect(rr.Body.String()).To(gm.Equal("/test/5"))
+}
+
+func TestUrlForVariableSubByIndex(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+    logger := setupLogging(t, g)
+
+    req, err := http.NewRequest("GET", "/test2", nil)
+    g.Expect(err).To(gm.BeNil())
+
+    rr := httptest.NewRecorder()
+    server, err := NewServer(AddCustomLogger(logger))
+    g.Expect(err).To(gm.BeNil())
+    handler := func(transactor *Transactor) responses.Data {
+        return transactor.Respond(200)
+    }
+
+    handler2 := func(transactor *Transactor) responses.Data {
+        return transactor.Respond(
+            200,
+            responses.Body(transactor.UrlFor(handler, 5)),
+        )
+    }
+
+    err = server.AddController(
+        "/test/<int:foo>",
+        FuncHandler(
+            "get",
+            handler,
+        ),
+    )
+    g.Expect(err).To(gm.BeNil())
+    err = server.AddController(
+        "/test2",
+        FuncHandler(
+            "get",
+            handler2,
+        ),
+    )
+    g.Expect(err).To(gm.BeNil())
+
+    server.muxer.ServeHTTP(rr, req)
+
+    g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
+    g.Expect(rr.Body.String()).To(gm.Equal("/test/5"))
+}
+
+func TestUrlForVariableSubWrongKey(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+    logger := setupLogging(t, g)
+
+    req, err := http.NewRequest("GET", "/test2", nil)
+    g.Expect(err).To(gm.BeNil())
+
+    rr := httptest.NewRecorder()
+    server, err := NewServer(AddCustomLogger(logger))
+    g.Expect(err).To(gm.BeNil())
+    handler := func(transactor *Transactor) responses.Data {
+        return transactor.Respond(200)
+    }
+
+    handler2 := func(transactor *Transactor) responses.Data {
+        return transactor.Respond(
+            200,
+            responses.Body(transactor.UrlFor(handler, UrlParamValues{
+                "bar": 5,
+            })),
+        )
+    }
+
+    err = server.AddController(
+        "/test/<int:foo>",
+        FuncHandler(
+            "get",
+            handler,
+        ),
+    )
+    g.Expect(err).To(gm.BeNil())
+    err = server.AddController(
+        "/test2",
+        FuncHandler(
+            "get",
+            handler2,
+        ),
+    )
+    g.Expect(err).To(gm.BeNil())
+
+    server.muxer.ServeHTTP(rr, req)
+
+    g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
+    g.Expect(rr.Body.String()).To(gm.Equal("/test/<int:foo>"))
+}

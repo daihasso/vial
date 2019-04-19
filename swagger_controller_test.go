@@ -59,6 +59,7 @@ func TestSwaggerGet(t *testing.T) {
     g.Expect(err).To(gm.BeNil())
 
     ctx, _ := handleSequenceId(req)
+    ctx = handleRequestId(ctx)
     req = req.WithContext(ctx)
 
     rr := httptest.NewRecorder()
@@ -115,6 +116,7 @@ func TestSwaggerGetJSON(t *testing.T) {
     g.Expect(err).To(gm.BeNil())
 
     ctx, _ := handleSequenceId(req)
+    ctx = handleRequestId(ctx)
     req = req.WithContext(ctx)
 
     rr := httptest.NewRecorder()

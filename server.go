@@ -4,6 +4,7 @@ import (
     "context"
     "fmt"
     "os"
+    "reflect"
     "sort"
     "strings"
     "strconv"
@@ -29,6 +30,7 @@ type Server struct {
 
     config *Config
     muxer *http.ServeMux
+    urlForMap map[reflect.Value][]string
     pathRouteControllerHelpers map[string][]*RouteControllerHelper
     preActionMiddleware []PreMiddleWare
     postActionMiddleware []PostMiddleWare
@@ -120,10 +122,20 @@ func (s *Server) AddController(
         return errors.Wrap(err, "Error while parsing route provided")
     }
     allRouteControllers := append([]RouteController{rc}, otherRCs...)
-    methodCallers := MethodsForRouteController(path, allRouteControllers...)
+    methodCallers, urlForMap := MethodsForRouteController(
+        path, allRouteControllers...,
+    )
     routeControllerHelper := RouteControllerHelper{
         route: route,
         methodCallers: methodCallers,
+    }
+
+    for k, v := range urlForMap {
+        if existing, ok := s.urlForMap[k]; ok {
+            s.urlForMap[k] = append(existing, v)
+        } else {
+            s.urlForMap[k] = []string{path}
+        }
     }
 
     if _, ok := s.pathRouteControllerHelpers[route.Base]; !ok {
@@ -525,6 +537,26 @@ func (s *Server) defaultMultiRouteControllerWrapper(
     return responseProcessor(requestFuncMatcher, s)
 }
 
+func (self Server) UrlFor(handler interface{}) string {
+    if urls := self.UrlsFor(handler); urls != nil {
+        return urls[0]
+    }
+
+    return ""
+}
+
+func (self Server) UrlsFor(handler interface{}) []string {
+    handlerVal := reflect.ValueOf(handler)
+    for handlerVal.Kind() == reflect.Ptr {
+        handlerVal = handlerVal.Elem()
+    }
+    if urls, ok := self.urlForMap[handlerVal]; ok {
+        return urls
+    }
+
+    return nil
+}
+
 // NewServer creates a bare-bones server.
 func NewServer(options ...ServerOption) (*Server, error) {
     return newServer(options)
@@ -659,6 +691,7 @@ func newServer(options []ServerOption) (*Server, error) {
 
         config: config,
         muxer: muxer,
+        urlForMap: make(map[reflect.Value][]string),
         pathRouteControllerHelpers: make(map[string][]*RouteControllerHelper),
         preActionMiddleware: preActionMiddleware,
         postActionMiddleware: postActionMiddleware,

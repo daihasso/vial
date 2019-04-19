@@ -12,10 +12,15 @@ import (
     "github.com/daihasso/slogging"
     "github.com/pkg/errors"
     "github.com/google/uuid"
+    "github.com/daihasso/beagle"
 
     "github.com/daihasso/vial/responses"
     "github.com/daihasso/vial/neterr"
 )
+
+// UrlParamValues is a helper for providing key: values for writing values to
+// a url with parameters.
+type UrlParamValues map[string]interface{}
 
 // Transactor is a helper for handling request and response logic.
 type Transactor struct {
@@ -48,6 +53,8 @@ func marshalItem(item interface{}) (string, error) {
 // provided one. Use this with caution.
 func (self *Transactor) ChangeContext(ctx context.Context) {
     self.Request = self.Request.WithContext(ctx)
+
+    // NOTE: Should builder really keep a copy of the context?
     self.Builder.ChangeContext(ctx)
 }
 
@@ -151,6 +158,55 @@ func (self Transactor) SequenceId() *uuid.UUID {
     //       may end up returning nil if something goes awry.
     sequenceId, _ := ContextSequenceId(self.Request.Context())
     return sequenceId
+}
+
+func (self Transactor) UrlFor(
+    handler interface{}, vals ...interface{},
+) string {
+    serverIn := self.Request.Context().Value(ServerContextKey)
+    server, ok := serverIn.(*Server)
+    if !ok {
+        self.Logger.Warn(
+            "Server is not in request context or it's value is not " +
+                "a *Server, is this request not using vial?",
+        )
+
+        return ""
+    }
+
+    path := server.UrlFor(handler)
+    if len(vals) != 0 {
+        if paramMap, ok := vals[0].(UrlParamValues); ok {
+            reg := beagle.MakeBetter(variableParse)
+            path = parameterRegex.ReplaceAllStringFunc(
+                path, func(match string) string {
+                    res := reg.Match(match)
+                    name := res.NamedGroup("name")[0]
+                    if val, ok := paramMap[name]; ok {
+                        return fmt.Sprint(val)
+                    }
+
+                    return match
+                },
+            )
+        } else {
+            i := 0
+            path = parameterRegex.ReplaceAllStringFunc(
+                path, func(match string) string {
+                    if i > len(vals) {
+                        return match
+                    }
+
+                    result := vals[i]
+                    i++
+
+                    return fmt.Sprint(result)
+                },
+            )
+        }
+    }
+
+    return path
 }
 
 // NewTransactor will generate a new transactor for request to a controller.

@@ -99,7 +99,7 @@ func RouteControllerIsValid(rc RouteController) []string {
         }
     } else if rcValRoot.Kind() == reflect.Func {
         if mcf, ok := rc.(methodControllerFunc); ok {
-            if _, _, err := mcf(); err != nil {
+            if _, _, _, err := mcf(); err != nil {
                 allErrMessages = append(
                     allErrMessages,
                     fmt.Sprintf(

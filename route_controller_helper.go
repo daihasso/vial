@@ -17,7 +17,7 @@ type RouteControllerCaller func(context.Context, *Transactor) responses.Data
 
 // methodControllerFunc is a function that returns the HTTP method with a func.
 type methodControllerFunc func() (
-    []RequestMethod, RouteControllerCaller, error,
+    []RequestMethod, RouteControllerCaller, RouteControllerFunc, error,
 )
 
 func standardRouteControllerCaller(
@@ -127,9 +127,11 @@ func generateMethodControllerFunc(
 
     rcWrap, err := wrapControllerMethod(rcf)
 
-    return func() ([]RequestMethod, RouteControllerCaller, error) {
+    return func() (
+        []RequestMethod, RouteControllerCaller, RouteControllerFunc, error,
+    ) {
         if err != nil {
-            return nil, nil, errors.Wrapf(
+            return nil, nil, nil, errors.Wrapf(
                 err,
                 "RouteControllerFunc provided had signature:\n%T but" +
                     " expected one of:\n%s\n",
@@ -137,7 +139,7 @@ func generateMethodControllerFunc(
                 validMethodsMessage(),
             )
         }
-        return reqMethods, rcWrap, nil
+        return reqMethods, rcWrap, rcf, nil
     }
 }
 
@@ -149,7 +151,8 @@ func generateMethodControllerFunc(
 func MethodsForRouteController(
     path string,
     routeControllers ...RouteController,
-) map[RequestMethod]RouteControllerCaller {
+) (map[RequestMethod]RouteControllerCaller, map[reflect.Value]string) {
+    urlForMap := make(map[reflect.Value]string)
     methods := make(map[RequestMethod]RouteControllerCaller)
 
     for i, rc := range routeControllers {
@@ -181,13 +184,16 @@ func MethodsForRouteController(
                     methods[reqMethod] = rcWrap
                 }
             }
+            urlForMap[reflect.ValueOf(rcValRoot)] = path
         } else if mcf, ok := rc.(methodControllerFunc); ok {
-            funcMethods, rcWrapper, _ := mcf()
+            funcMethods, rcWrapper, original, _ := mcf()
             for _, method := range funcMethods {
                 methods[method] = rcWrapper
             }
+
+            urlForMap[reflect.ValueOf(original)] = path
         }
     }
 
-    return methods
+    return methods, urlForMap
 }
