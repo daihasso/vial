@@ -68,13 +68,19 @@ func (self Builder) prepare(
         httpHeaders[properKey] = value
     }
 
-    if self.contentType != "" {
-        httpHeaders.Set(ContentTypeHeader, self.contentType)
-    } else if _, ok := httpHeaders[ContentTypeHeader]; !ok {
-        httpHeaders.Set(
-            ContentTypeHeader,
-            DefaultContentTypeForEncoding(self.encodingType),
-        )
+    if _, ok := httpHeaders[ContentTypeHeader]; !ok {
+        if ct, ok := self.bodyData.(ContentTyper); ok {
+            httpHeaders.Set(
+                ContentTypeHeader, ct.ContentType(self.contentType),
+            )
+        } else if self.contentType != "" {
+            httpHeaders.Set(ContentTypeHeader, self.contentType)
+        } else {
+            httpHeaders.Set(
+                ContentTypeHeader,
+                DefaultContentTypeForEncoding(self.encodingType),
+            )
+        }
     }
 
     var body []byte
