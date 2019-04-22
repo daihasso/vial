@@ -453,6 +453,11 @@ func responseProcessor(
             }
         }()
 
+        // Add a reference to the request to the context.
+        r = r.WithContext(context.WithValue(
+            r.Context(), "request", r,
+        ))
+
         // Add a reference to ourself to the context.
         r = r.WithContext(context.WithValue(
             r.Context(), ServerContextKey, server,
