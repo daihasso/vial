@@ -54,7 +54,7 @@ type RouteControllerHelper struct {
 // AllMethods returns all the methods the RouteControllerCaller responds to.
 func (self RouteControllerHelper) AllMethods() []RequestMethod {
     var methods []RequestMethod
-    for method, _ := range self.methodCallers {
+    for method := range self.methodCallers {
         methods = append(methods, method)
     }
     return methods

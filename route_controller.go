@@ -47,7 +47,7 @@ func validMethodsMessage() string {
     // TODO: This could probably be cached and only done once
     //       if that matters.
     var validMethods []string
-    for methodType, _ := range validRouteControllerTypes {
+    for methodType := range validRouteControllerTypes {
         validMethods = append(
             validMethods, methodType.String(),
         )
