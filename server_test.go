@@ -687,7 +687,7 @@ func TestServerLoggerContext(t *testing.T) {
                 serverLoggerIn := ctx.Value(ServerLoggerContextKey)
                 serverLogger := serverLoggerIn.(*logging.Logger)
 
-                g.Expect(serverLogger == serverLogger)
+                g.Expect(serverLogger).To(gm.Equal(logger))
 
                 t.Log("Logger name:", serverLogger.Identifier())
 
@@ -724,7 +724,7 @@ func TestTransactorFromContext(t *testing.T) {
                 ctxTransactorIn := ctx.Value(TransactorContextKey)
                 ctxTransactor := ctxTransactorIn.(*Transactor)
 
-                g.Expect(ctxTransactor == ctxTransactor)
+                g.Expect(ctxTransactor).To(gm.Equal(transactor))
 
                 return transactor.Respond(200)
             },
