@@ -460,7 +460,7 @@ func responseProcessor(
         ))
 
         // Add our sequence id, request id & server logger to the context.
-        ctx, _ = handleSequenceId(r)
+        ctx, sequenceId = handleSequenceId(r)
         ctx = handleRequestId(ctx)
         ctx = context.WithValue(ctx, ServerLoggerContextKey, server.Logger)
         r = r.WithContext(ctx)
