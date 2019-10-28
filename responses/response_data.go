@@ -24,9 +24,20 @@ func (self Data) Write(w http.ResponseWriter) error {
         w.Header()[key] = value
     }
     w.WriteHeader(self.StatusCode)
-    _, err := w.Write(self.Body)
 
-    return errors.Wrap(err, "Error while writing response data to response")
+    // FIXME: Temporary fix for empty bodies to solve:
+    //            http: request method or response status code does not allow
+    //            body error while writing response data to response
+    if self.Body != nil {
+        _, err := w.Write(self.Body)
+        if err != nil {
+            return errors.Wrap(
+                err, "Error while writing response data to response",
+            )
+        }
+    }
+
+    return nil
 }
 
 // Error returns and unexpected errors that may have happened.
