@@ -290,7 +290,7 @@ func TestServerDefaultOptions(t *testing.T) {
 
     logger := setupLogging(t, g)
 
-    req, err := http.NewRequest("OPTIONS", "/hello/tester", nil)
+    req, err := http.NewRequest("OPTIONS", "/hello/options", nil)
     g.Expect(err).To(gm.BeNil())
 
     rr := httptest.NewRecorder()
@@ -323,7 +323,12 @@ func TestServerDefaultOptions(t *testing.T) {
 
     server.muxer.ServeHTTP(rr, req)
 
+
+
     t.Log(rr.Result().Header)
+    t.Log(rr.Body.String())
+
+    g.Expect(rr.Code).To(gm.Equal(http.StatusOK))
     g.Expect(rr.Header().Get("Access-Control-Allow-Methods")).To(
         gm.Equal("OPTIONS, GET, POST"),
     )
