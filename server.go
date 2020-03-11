@@ -95,7 +95,7 @@ func createGoServer(
 // must match the expected format that RouteControllerIsValid checks for.
 // It must be one of:
 //    A func or a struct with a method defined in validRouteControllerFields
-//    (Post, Get, Put, Patch, Delete, Head and/or Options) Options method that
+//    (Post, Get, Put, Patch, Delete, Head and/or Options) that
 //    matches either of the signatures defined in validRouteControllerTypes:
 //        func(context.Context, *Transactor) responses.Data
 //    or
