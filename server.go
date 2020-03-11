@@ -254,18 +254,19 @@ func (self Server) respondToMethod(
 ) responses.Data {
     reqMethod := RequestMethodFromString(r.Method)
 
-    var rcc RouteControllerCaller
-    rch := rchs[0]
+    var (
+        rcc RouteControllerCaller
+        rch *RouteControllerHelper
+    )
     rchSet := false
     for _, nextRch := range rchs {
-        if nextRcc, ok := rch.ControllerFuncForMethod(reqMethod); ok {
+        if nextRcc, ok := nextRch.ControllerFuncForMethod(reqMethod); ok {
             rch = nextRch
             rcc = nextRcc
             rchSet = true
             break
         }
     }
-
     if !rchSet {
         if reqMethod == MethodOPTIONS {
             rcc = func(
@@ -273,6 +274,7 @@ func (self Server) respondToMethod(
             ) responses.Data {
                 return DefaultOptions(self, transactor, rchs)
             }
+            rch = rchs[0]
         } else {
             //
             // NOTE: A lot of the logic here of iterating through all the
