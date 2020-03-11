@@ -546,6 +546,14 @@ func (self Server) UrlFor(handler interface{}) string {
     return ""
 }
 
+func (self *Server) AddPostActionMiddleware(middleware ...PostMiddleWare) {
+    self.postActionMiddleware = append(self.postActionMiddleware, middleware...)
+}
+
+func (self *Server) AddPreActionMiddleware(middleware ...PreMiddleWare) {
+    self.preActionMiddleware = append(self.preActionMiddleware, middleware...)
+}
+
 func (self Server) UrlsFor(handler interface{}) []string {
     handlerVal := reflect.ValueOf(handler)
     for handlerVal.Kind() == reflect.Ptr {
