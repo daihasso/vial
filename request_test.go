@@ -128,3 +128,16 @@ func TestRequestPathWrongType(t *testing.T) {
     g.Expect(ok).ToNot(gm.BeTrue())
     g.Expect(val).To(gm.BeZero())
 }
+
+func TestRequestQueryParamMissing(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+    req, err := http.NewRequest("GET", "/foo?bar=baz&bar=baz2", nil)
+    g.Expect(err).To(gm.BeNil())
+
+    srvReq := NewInboundRequest(req, PathParams{})
+
+    val, ok := srvReq.QueryParam("test")
+    g.Expect(ok).To(gm.BeFalse())
+    g.Expect(val).To(gm.Equal(""))
+}

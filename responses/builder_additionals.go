@@ -49,3 +49,10 @@ func Encoding(encodingType EncodingType) AdditionalAttribute {
         return nil
     }
 }
+
+func OverrideContentType(contentType string) AdditionalAttribute {
+    return func(rb *Builder) error {
+        rb.SetContentType(contentType)
+        return nil
+    }
+}

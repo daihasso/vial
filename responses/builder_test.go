@@ -14,6 +14,14 @@ import (
     "github.com/daihasso/vial/neterr"
 )
 
+type customTyperStruct struct {
+    Foo string
+}
+
+func (customTyperStruct) ContentType(_ string) string {
+    return "application/vnd.com.mycompany.cool_type+json"
+}
+
 func TestBuilderBasic(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
@@ -342,6 +350,26 @@ func TestAbort(t *testing.T) {
     g.Expect(responseData.Body).To(gm.Equal(expectedBodyBytes))
 }
 
+func TestAbortWithUnexpectedError(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+    expectedBodyBytes := []byte(
+        `{"errors":[{"code":0,"message":"Expected failure while testing"}]}`,
+    )
+
+    responseData := Abort(
+        context.Background(),
+        JSONEncoding,
+        http.StatusConflict,
+        neterr.NewCodedError(
+            0, "Expected failure while testing",
+        ),
+    )
+    t.Log(responseData)
+
+    g.Expect(responseData.Body).To(gm.Equal(expectedBodyBytes))
+}
+
 func TestRespond(t *testing.T) {
     g := gm.NewGomegaWithT(t)
 
@@ -358,4 +386,129 @@ func TestRespond(t *testing.T) {
     t.Log(responseData)
 
     g.Expect(responseData.Body).To(gm.Equal(expectedBodyBytes))
+}
+
+func TestBuilderStringBody(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+    expected := "This is a sentence!"
+    expectedBodyBytes := []byte(expected)
+
+    expectedContentType := "not/a.real.type"
+
+    builder, err := NewBuilder(
+        context.Background(),
+        JSONEncoding,
+        Body(expected),
+        OverrideContentType(expectedContentType),
+    )
+    g.Expect(err).To(gm.BeNil())
+
+    responseData := builder.Finish()
+
+    t.Log(string(responseData.Body))
+    g.Expect(responseData.Body).To(gm.Equal(expectedBodyBytes))
+    g.Expect(responseData.Headers["Content-Type"]).To(gm.ContainElement(expectedContentType))
+}
+
+func TestBuilderBodyWithTyper(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+    expectedBodyBytes := []byte(`{"Foo":"bar"}`)
+    expectedContentType := "application/vnd.com.mycompany.cool_type+json"
+
+    builder, err := NewBuilder(
+        context.Background(),
+        JSONEncoding,
+        Body(customTyperStruct{
+            Foo: "bar",
+        }),
+    )
+    g.Expect(err).To(gm.BeNil())
+
+    responseData := builder.Finish()
+
+    t.Log(string(responseData.Body))
+    g.Expect(responseData.Body).To(gm.Equal(expectedBodyBytes))
+    g.Expect(responseData.Headers["Content-Type"]).To(gm.ContainElement(expectedContentType))
+}
+
+func TestBuilderPlainText(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+    expected := []string{"This is a sentence!"}
+    expectedBodyBytes := []byte("[" + expected[0] + "]")
+
+    builder, err := NewBuilder(
+        context.Background(),
+        TextPlainEncoding,
+        Body(expected),
+    )
+    g.Expect(err).To(gm.BeNil())
+
+    responseData := builder.Finish()
+
+    t.Log(string(responseData.Body))
+    g.Expect(responseData.Body).To(gm.Equal(expectedBodyBytes))
+    g.Expect(responseData.Headers["Content-Type"]).To(gm.ContainElement(TextPlainUTF8ContentType))
+}
+
+func TestBuilderEncodingOverride(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+    expected := "This is a sentence!"
+    expectedBodyBytes := []byte(expected)
+
+    builder, err := NewBuilder(
+        context.Background(),
+        JSONEncoding,
+        Body(expected),
+    )
+    g.Expect(err).To(gm.BeNil())
+
+    responseData := builder.Finish(Encoding(TextPlainEncoding))
+
+    t.Log(string(responseData.Body))
+    g.Expect(responseData.Body).To(gm.Equal(expectedBodyBytes))
+    g.Expect(responseData.Headers["Content-Type"]).To(gm.ContainElement(TextPlainUTF8ContentType))
+}
+
+func TestBuilderUnsetEncoding(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+
+    builder, err := NewBuilder(
+        context.Background(),
+        UnsetEncoding,
+        Body(map[string]string{"foo": "bar"}),
+    )
+    g.Expect(err).To(gm.BeNil())
+
+    responseData := builder.Finish()
+
+    t.Log(responseData.Error())
+    g.Expect(responseData.Error()).Should(gm.HaveOccurred())
+    g.Expect(responseData.Error()).Should(gm.MatchError(
+        "Encoding type not set, unsure how to marshal content.",
+    ))
+}
+
+func TestBuilderUnknownEncoding(t *testing.T) {
+    g := gm.NewGomegaWithT(t)
+
+
+    builder, err := NewBuilder(
+        context.Background(),
+        EncodingType(9001),
+        Body(map[string]string{"foo": "bar"}),
+    )
+    g.Expect(err).To(gm.BeNil())
+
+    responseData := builder.Finish()
+
+    t.Log(responseData.Error())
+    g.Expect(responseData.Error()).Should(gm.HaveOccurred())
+    g.Expect(responseData.Error()).Should(gm.MatchError(
+        "Unknown encodingType: 9001",
+    ))
 }
