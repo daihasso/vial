@@ -484,7 +484,9 @@ func responseProcessor(
         }
 
         err := responseData.Write(w)
-        panic(err)
+        if err != nil {
+            panic(err)
+        }
     }
 }
 
